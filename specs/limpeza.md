@@ -17,4 +17,5 @@ Primeira rotina sobre o acervo já processado (menu **Rotinas** da UI). Módulo 
 ## Regras
 - Nunca toca na origem (caixa postal/PST); só move/apaga diretórios do output.
 - Bloqueada enquanto houver job em andamento.
-- Mensagem excluída sai do índice: IMAP/Graph não a recapturam (estado incremental); PST e `--todas` sim.
+- Opção **voltam na próxima captura** (padrão marcada): tira as mensagens do controle incremental (`incremental.liberar`: uid IMAP / id Graph de `origem` e `origens_adicionais`), então a próxima execução as recaptura. Desmarcada: não voltam (útil para lixo). PST sempre relê.
+- **reler tudo** (UI, por fonte IMAP/Graph) / `reler "<fonte>"` (CLI): zera o controle da fonte (`incremental.zerar`); a próxima execução relê todas as pastas e a dedup descarta o que já está no acervo. Resolve exclusões feitas sem a opção acima.

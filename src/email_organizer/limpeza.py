@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path, PurePosixPath
 
+from email_organizer.incremental import liberar
 from email_organizer.repositorio import (
     ENVIADAS,
     METADATA,
@@ -107,9 +108,22 @@ def _novo_lote(lixeira: Path) -> Path:
     return lote
 
 
-def mover_para_lixeira(raiz: Path, caminhos: list[str]) -> int:
+def _origens(raiz: Path, caminho: str) -> list[dict]:
+    """Origens (principal + adicionais) das mensagens em `caminho` (mensagem ou pasta)."""
+    base = raiz / caminho
+    dirs = [base] if (base / METADATA).exists() else Repositorio(raiz).mensagens()
+    saida = []
+    for d in dirs:
+        if d == base or d.is_relative_to(base):
+            meta = ler_json(d / METADATA)
+            saida += [meta.get("origem") or {}, *meta.get("origens_adicionais", [])]
+    return saida
+
+
+def mover_para_lixeira(raiz: Path, caminhos: list[str], estado: Path | None = None) -> int:
     """Move as seleções para um novo lote. Seleção dentro de outra selecionada é ignorada.
-    Retorna o número de mensagens movidas."""
+    Com `estado`, tira as mensagens do controle incremental para serem recapturadas na
+    próxima execução. Retorna o número de mensagens movidas."""
     validos = _validos(raiz)
     escolhidos = sorted({c.strip("/") for c in caminhos})
     for c in escolhidos:
@@ -121,6 +135,8 @@ def mover_para_lixeira(raiz: Path, caminhos: list[str]) -> int:
     ]
     if not escolhidos:
         return 0
+    if estado is not None:
+        liberar(estado, [o for c in escolhidos for o in _origens(raiz, c)])
     lote = _novo_lote(raiz / LIXEIRA)
     itens, total = [], 0
     for c in escolhidos:

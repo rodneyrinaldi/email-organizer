@@ -5,6 +5,7 @@ import os
 import sys
 from pathlib import Path
 
+from email_organizer import incremental
 from email_organizer.captura import reorganizar
 from email_organizer.config import SEGREDOS, carregar_config, dir_estado
 from email_organizer.fontes.graph import Autenticacao
@@ -46,6 +47,12 @@ def main(argv: list[str] | None = None) -> int:
     cl.add_argument("--todas", action="store_true", help="reclassifica também as já classificadas")
 
     sub.add_parser("reconstruir-indice")
+
+    rl = sub.add_parser(
+        "reler",
+        help="zera o controle de já lidas de uma fonte IMAP/Graph (relê tudo)",
+    )
+    rl.add_argument("fonte")
 
     re_ = sub.add_parser(
         "reiniciar", help="apaga acervo e estado incremental (mantém config, senhas e tokens)"
@@ -110,6 +117,17 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         usuario = Autenticacao(fonte, dir_estado(raiz)).conectar()
         print(f"conectado: {usuario}")
+        return 0
+
+    if args.comando == "reler":
+        fonte = next((f for f in todas if f.nome == args.fonte), None)
+        if fonte is None:
+            print(f"fonte {args.fonte!r} não encontrada", file=sys.stderr)
+            return 1
+        zerou = incremental.zerar(dir_estado(raiz), fonte)
+        print(
+            "controle zerado: a próxima execução relê todas as pastas" if zerou else "nada a zerar"
+        )
         return 0
 
     if args.comando == "pastas":

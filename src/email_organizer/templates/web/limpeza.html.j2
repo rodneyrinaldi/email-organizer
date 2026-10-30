@@ -13,7 +13,10 @@
         <button type="button" class="text-slate-600 hover:text-slate-900" onclick="abrirTudo(true)">expandir</button>
         <button type="button" class="text-slate-600 hover:text-slate-900" onclick="abrirTudo(false)">recolher</button>
         <button type="button" class="text-slate-600 hover:text-slate-900" onclick="desmarcarTudo()">desmarcar tudo</button>
-        <span class="ml-auto text-slate-600"><span id="marcadas" class="font-semibold tabular-nums">0</span> mensagem(ns) marcada(s)</span>
+        <label class="ml-auto flex cursor-pointer items-center gap-1.5 text-slate-600" title="tira as mensagens do controle de já lidas (IMAP/Graph); PST sempre relê">
+          <input type="checkbox" name="recapturar" value="true" checked class="h-4 w-4 rounded border-slate-300 text-indigo-600"> voltam na próxima captura
+        </label>
+        <span class="text-slate-600"><span id="marcadas" class="font-semibold tabular-nums">0</span> mensagem(ns) marcada(s)</span>
         <button type="submit" id="btn-excluir" disabled class="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-1.5 font-medium text-white shadow-sm hover:bg-red-700 disabled:bg-slate-300 disabled:cursor-not-allowed">
           {{ spinner() }}<span>Mover para a lixeira</span>
         </button>

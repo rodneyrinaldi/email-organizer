@@ -32,6 +32,13 @@
                         hx-get="/fontes/{{ f.nome | urlencode }}/pastas" hx-target="#pastas-{{ loop.index }}" hx-disabled-elt="this">
                   {{ spinner("text-indigo-600") }}<span>pastas</span>
                 </button>
+                {% if item.tipo in ('imap', 'graph') %}
+                <button type="button" class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800" title="esquece o que já foi lido: a próxima execução relê as pastas (a dedup evita duplicatas)"
+                        hx-post="/fontes/{{ f.nome | urlencode }}/reler" hx-disabled-elt="this"
+                        hx-confirm="Zerar o controle de já lidas de {{ f.nome }}? A próxima execução relê todas as pastas (mais lenta); o que já está no acervo conta como duplicada.">
+                  {{ spinner("text-slate-500") }}<span>reler tudo</span>
+                </button>
+                {% endif %}
                 {% if item.tipo == 'graph' %}
                 <button type="button" class="inline-flex items-center gap-1.5 text-sm text-violet-600 hover:text-violet-800"
                         hx-post="/conectar/{{ f.nome | urlencode }}" hx-target="#conectar-{{ loop.index }}" hx-disabled-elt="this">

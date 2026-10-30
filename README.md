@@ -343,8 +343,9 @@ O token fica em `<ESTADO_DIR>/tokens/` e se renova sozinho.
 |---|---|
 | **Processar** | marca fontes e, opcionalmente, pastas só para este job; opções PDF/Markdown/IA; progresso ao vivo (etapas, contadores, barras), cancelar, relatório e últimos jobs. |
 | **Reprocessar** | refaz artefatos e/ou classificação a partir do `.eml` salvo. |
+| **reler tudo** | por fonte IMAP/Graph: esquece o que já foi lido; a próxima execução relê as pastas (dedup evita duplicatas). |
 | **Conectar** | autoriza contas Microsoft (código em destaque, tempo restante, novo código se expirar). |
-| **Rotinas → Limpeza** | árvore conta → `.enviadas`/destinatário · remetente → mensagens; marque e mova para a lixeira. |
+| **Rotinas → Limpeza** | árvore conta → `.enviadas`/destinatário · remetente → mensagens; marque e mova para a lixeira. Com **voltam na próxima captura** (padrão), as mensagens são recapturadas na próxima execução; desmarque para descartar de vez. |
 | **Rotinas → Lixeira** | `.lixeira/` na raiz do output, um lote por exclusão; restaurar, excluir lote ou esvaziar (definitivo, com confirmação). |
 
 ### CLI
@@ -360,6 +361,7 @@ O token fica em `<ESTADO_DIR>/tokens/` e se renova sozinho.
 | `processar --sem-artefatos` / `--sem-classificacao` | só captura / sem IA |
 | `classificar [--todas]` | classifica pendentes (ou tudo) sem acessar a caixa |
 | `reconstruir-indice` | recria `_index.json` varrendo os diretórios |
+| `reler "<fonte>"` | zera o controle de já lidas de uma fonte IMAP/Graph (relê tudo na próxima execução) |
 | `reorganizar [--confirmar]` | move mensagens de layouts antigos para o atual (sem `--confirmar` só lista) |
 | `reiniciar [--confirmar]` | apaga acervo e estado incremental; mantém `config.json`, `segredos.json` e `tokens/` |
 

@@ -17,7 +17,7 @@ from fastapi import FastAPI, Form, HTTPException
 from fastapi.responses import HTMLResponse
 from jinja2 import Environment, PackageLoader
 
-from email_organizer import limpeza
+from email_organizer import incremental, limpeza
 from email_organizer.config import SEGREDOS, Config, Fonte, Pasta, carregar_config, dir_estado
 from email_organizer.fontes.graph import Autenticacao
 from email_organizer.ia import ClienteOllama
@@ -203,6 +203,15 @@ def criar_app(
         marcadas = {p.casefold() for p in f.nomes_pastas()}
         itens = [{"nome": p, "marcada": p.casefold() in marcadas} for p in lista]
         return _html("_pastas.html.j2", fonte=f, erro=None, pastas=itens, sep=SEP)
+
+    @app.post("/fontes/{nome}/reler", response_class=HTMLResponse)
+    def reler(nome: str) -> HTMLResponse:
+        if em_andamento():
+            return _avisar("há um job em andamento; aguarde")
+        f = fonte(config(), nome)
+        if not incremental.zerar(dir_estado(raiz), f):
+            return _avisar(f"{nome}: nada a zerar (já relê tudo na próxima execução)")
+        return _avisar(f"{nome}: controle zerado — a próxima execução relê todas as pastas", "ok")
 
     # --- jobs ----------------------------------------------------------------
 
@@ -396,19 +405,21 @@ def criar_app(
     @app.post("/limpeza/excluir", response_class=HTMLResponse)
     def limpeza_excluir(
         caminhos: Annotated[list[str], Form()] = [],  # noqa: B006
+        recapturar: Annotated[bool, Form()] = False,
     ) -> HTMLResponse:
         if r := ocupado():
             return r
         if not caminhos:
             return _avisar("nada marcado")
         try:
-            n = limpeza.mover_para_lixeira(raiz, caminhos)
+            n = limpeza.mover_para_lixeira(raiz, caminhos, dir_estado(raiz) if recapturar else None)
         except (ValueError, OSError) as e:
             return _avisar(f"falha ao mover para a lixeira: {e}", "erro")
         r = _html(
             "_limpeza_arvore.html.j2",
             contas=limpeza.arvore(raiz),
-            texto=f"{n} mensagem(ns) movida(s) para a lixeira",
+            texto=f"{n} mensagem(ns) movida(s) para a lixeira"
+            + ("; voltam na próxima captura" if recapturar else ""),
             tipo="ok",
         )
         return r

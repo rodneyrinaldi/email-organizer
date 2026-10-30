@@ -64,3 +64,45 @@ def test_restaurar_nao_sobrescreve(acervo, origem_imap):
     (lote,) = limpeza.lotes(raiz)
     with pytest.raises(FileExistsError):
         limpeza.restaurar(raiz, lote["nome"], rel)
+
+
+def test_mover_libera_controle_incremental(acervo, tmp_path):
+    from email_organizer import incremental
+    from email_organizer.repositorio import gravar_json, ler_json
+
+    raiz, recebida, enviada = acervo  # origem: imap voce@gmail.com, pasta "mariana", uid 1
+    estado = tmp_path / "estado"
+    arq = estado / "imap" / "voce-gmail-com" / "mariana.json"
+    gravar_json(arq, {"pasta": "mariana", "uidvalidity": None, "capturados": [1, 2, 3]})
+    graph = estado / "graph" / "voce-gmail-com" / "x.json"
+    gravar_json(graph, {"pasta": "x", "capturados": ["a"]})
+
+    limpeza.mover_para_lixeira(raiz, [recebida.relative_to(raiz).as_posix()], estado)
+    assert ler_json(arq)["capturados"] == [2, 3]
+    assert ler_json(graph)["capturados"] == ["a"]  # outra fonte intocada
+    # sem estado (opção desmarcada): controle não muda
+    limpeza.mover_para_lixeira(raiz, [enviada.relative_to(raiz).as_posix()])
+    assert ler_json(arq)["capturados"] == [2, 3]
+
+    assert (
+        incremental.liberar(
+            estado, [{"tipo": "graph", "conta": "voce@gmail.com", "pasta": "x", "graph_id": "a"}]
+        )
+        == 1
+    )
+    assert incremental.liberar(estado, [{"tipo": "pst", "arquivo": "x.pst"}]) == 0
+
+
+def test_zerar_controle_da_fonte(tmp_path):
+    from email_organizer import incremental
+    from email_organizer.config import FonteGraph, FonteImap, FontePst
+    from email_organizer.repositorio import gravar_json
+
+    estado = tmp_path / "estado"
+    gravar_json(estado / "graph" / "eu-hotmail-com" / "inbox.json", {"capturados": ["a"]})
+    hotmail = FonteGraph(nome="Hotmail", usuario="eu@hotmail.com", client_id="x")
+    assert incremental.zerar(estado, hotmail) is True
+    assert not (estado / "graph" / "eu-hotmail-com").exists()
+    assert incremental.zerar(estado, hotmail) is False
+    assert incremental.zerar(estado, FonteImap(nome="g", host="h", usuario="a@b.c")) is False
+    assert incremental.zerar(estado, FontePst(nome="p", caminho="/x.pst")) is False

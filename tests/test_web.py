@@ -266,3 +266,15 @@ def test_conectar_detecta_token_salvo_por_outro_codigo(raiz):
     assert "conectado: eu@hotmail.com" in c.post("/conectar/Hotmail").text
     r = c.post("/conectar/Hotmail?forcar=true").text
     assert "COD2" in r and "aguardando" in c.get("/conectar/Hotmail/status").text
+
+
+def test_reler_tudo(raiz):
+    from email_organizer.repositorio import gravar_json
+
+    c = _cliente(raiz)
+    assert "nada a zerar" in c.post("/fontes/Hotmail/reler").text
+    gravar_json(raiz / ".estado" / "graph" / "eu-hotmail-com" / "inbox.json", {"capturados": []})
+    r = c.post("/fontes/Hotmail/reler")
+    assert r.headers["HX-Reswap"] == "none" and "controle zerado" in r.text
+    assert not (raiz / ".estado" / "graph" / "eu-hotmail-com").exists()
+    assert "reler tudo" in c.get("/").text and "voltam na próxima captura" in c.get("/limpeza").text
