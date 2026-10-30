@@ -1,0 +1,91 @@
+{
+  "contas_proprias": [],
+  "filtros": {},
+  "imap": [
+    {
+      "ativo": true,
+      "nome": "Gmail pessoal",
+      "host": "imap.gmail.com",
+      "porta": 993,
+      "ssl": true,
+      "usuario": "voce@gmail.com",
+      "pastas": [
+        "mariana"
+      ]
+    },
+    {
+      "ativo": false,
+      "nome": "Gmail secundario",
+      "host": "imap.gmail.com",
+      "porta": 993,
+      "ssl": true,
+      "usuario": "outra@gmail.com",
+      "pastas": []
+    },
+    {
+      "ativo": false,
+      "nome": "Advocacia",
+      "host": "imap.hostinger.com",
+      "porta": 993,
+      "ssl": true,
+      "usuario": "contato@escritorio.adv.br",
+      "pastas": []
+    }
+  ],
+  "graph": [
+    {
+      "ativo": false,
+      "nome": "Hotmail",
+      "usuario": "voce@hotmail.com",
+      "client_id": "CLIENT_ID_DO_APP_ENTRA",
+      "tenant": "consumers",
+      "pastas": []
+    }
+  ],
+  "pst": [
+    {
+      "ativo": false,
+      "nome": "Arquivo-2024",
+      "caminho": "/pst/Arquivo-2024.pst",
+      "pastas": []
+    },
+    {
+      "ativo": false,
+      "nome": "Arquivo-2024-copia",
+      "caminho": "/pst/Arquivo-2024-copia.pst",
+      "pastas": []
+    },
+    {
+      "ativo": false,
+      "nome": "Servicos",
+      "caminho": "/pst/Servicos.pst",
+      "pastas": []
+    }
+  ],
+  "ollama": {
+    "habilitado": true,
+    "url": "http://192.168.0.10:11434",
+    "modelo": "qwen2.5:7b",
+    "timeout_s": 120
+  },
+  "opcoes": {
+    "pdf_principal": true,
+    "markdown": true,
+    "classificacao": true,
+    "baixar_imagens_remotas": true,
+    "timeout_conversao_s": 120,
+    "trabalhadores": 0
+  },
+  "categorias": [
+    "Banco",
+    "Seguros",
+    "Imóveis",
+    "Contratos",
+    "Procurações",
+    "Trabalhista",
+    "Tributário",
+    "Processo Judicial",
+    "Cartão de Crédito",
+    "Outros"
+  ]
+}

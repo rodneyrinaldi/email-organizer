@@ -1,0 +1,19 @@
+Message-ID: <anx1@x.com>
+Date: Wed, 15 Jul 2025 10:00:00 -0300
+From: Mariana Souza <mariana@cliente.com.br>
+To: voce@gmail.com
+Subject: Documentos do processo trabalhista
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="B"
+
+--B
+Content-Type: text/html; charset=utf-8
+
+<p>Segue a <b>procuração</b> assinada.</p>
+--B
+Content-Type: application/pdf
+Content-Disposition: attachment; filename="procuracao.pdf"
+Content-Transfer-Encoding: base64
+
+JVBERi0xLjQK
+--B--

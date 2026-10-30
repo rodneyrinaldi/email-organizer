@@ -1,0 +1,21 @@
+{% extends 'base.html.j2' %}
+{% from '_macros.html.j2' import spinner %}
+{% block titulo %}Lixeira · email-organizer{% endblock %}
+{% block conteudo %}
+<main class="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+  <section class="rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+    <div class="flex flex-wrap items-center gap-3 border-b border-slate-100 px-5 py-3">
+      <div>
+        <h2 class="font-semibold">Lixeira</h2>
+        <p class="text-sm text-slate-500">Itens movidos pela <a href="/limpeza" class="text-indigo-600 hover:underline">limpeza</a>, em <code class="rounded bg-slate-100 px-1">.lixeira/</code>. Restaurar devolve ao lugar de origem.</p>
+      </div>
+      <button type="button" class="ml-auto inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-red-700"
+              hx-post="/lixeira/esvaziar" hx-target="#lotes" hx-disabled-elt="this"
+              hx-confirm="Apagar DEFINITIVAMENTE tudo que está na lixeira? Não dá para desfazer.">
+        {{ spinner() }}<span>Esvaziar lixeira</span>
+      </button>
+    </div>
+    <div id="lotes">{% include "_lixeira_lotes.html.j2" %}</div>
+  </section>
+</main>
+{% endblock %}

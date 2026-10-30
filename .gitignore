@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+
+# dados e segredos nunca versionados
+output/
+pst/
+config.json
+.estado/
+tokens/
+*.pst
+.env

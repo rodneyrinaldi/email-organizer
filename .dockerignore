@@ -1,0 +1,10 @@
+.venv
+.git
+.claude
+output
+pst
+tests
+specs
+**/__pycache__
+*.pst
+config.json

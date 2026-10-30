@@ -1,0 +1,56 @@
+{% extends 'base.html.j2' %}
+{% from '_macros.html.j2' import spinner %}
+{% block titulo %}Limpeza · email-organizer{% endblock %}
+{% block conteudo %}
+<main class="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+  <section class="rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+    <div class="border-b border-slate-100 px-5 py-3">
+      <h2 class="font-semibold">Limpeza</h2>
+      <p class="text-sm text-slate-500">Marque contas, remetentes, destinatários ou mensagens e mova para a <a href="/lixeira" class="text-indigo-600 hover:underline">lixeira</a>. Nada é apagado aqui; dá para restaurar depois.</p>
+    </div>
+    <form id="form-limpeza" hx-post="/limpeza/excluir" hx-target="#arvore" hx-swap="innerHTML" hx-disabled-elt="find button[type=submit]">
+      <div class="flex flex-wrap items-center gap-3 border-b border-slate-100 bg-slate-50 px-5 py-2 text-sm">
+        <button type="button" class="text-slate-600 hover:text-slate-900" onclick="abrirTudo(true)">expandir</button>
+        <button type="button" class="text-slate-600 hover:text-slate-900" onclick="abrirTudo(false)">recolher</button>
+        <button type="button" class="text-slate-600 hover:text-slate-900" onclick="desmarcarTudo()">desmarcar tudo</button>
+        <span class="ml-auto text-slate-600"><span id="marcadas" class="font-semibold tabular-nums">0</span> mensagem(ns) marcada(s)</span>
+        <button type="submit" id="btn-excluir" disabled class="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-1.5 font-medium text-white shadow-sm hover:bg-red-700 disabled:bg-slate-300 disabled:cursor-not-allowed">
+          {{ spinner() }}<span>Mover para a lixeira</span>
+        </button>
+      </div>
+      <div id="arvore" class="px-3 py-3">{% include "_limpeza_arvore.html.j2" %}</div>
+    </form>
+  </section>
+</main>
+{% endblock %}
+{% block scripts %}
+<script>
+  const arvore = () => document.getElementById("arvore");
+  // pasta marcada cobre tudo abaixo: filhos ficam marcados e desabilitados (não são enviados)
+  function aplicar(cb) {
+    const det = cb.closest("details");
+    if (!det || cb.closest("summary") === null) return;
+    det.querySelectorAll(":scope > div input[type=checkbox]").forEach((f) => {
+      f.checked = cb.checked; f.disabled = cb.checked;
+    });
+  }
+  function herdar() {  // mensagens carregadas depois dentro de pasta já marcada
+    arvore().querySelectorAll("summary input[type=checkbox]:checked").forEach(aplicar);
+  }
+  function contar() {
+    let n = 0;
+    arvore().querySelectorAll("input[type=checkbox]:checked:not(:disabled)").forEach((c) => n += +c.dataset.n);
+    document.getElementById("marcadas").textContent = n;
+    document.getElementById("btn-excluir").disabled = n === 0;
+  }
+  function abrirTudo(abrir) { arvore().querySelectorAll("details").forEach((d) => d.open = abrir); }
+  function desmarcarTudo() {
+    arvore().querySelectorAll("input[type=checkbox]").forEach((c) => { c.checked = false; c.disabled = false; });
+    contar();
+  }
+  document.addEventListener("change", (e) => {
+    if (e.target.matches("#arvore input[type=checkbox]")) { aplicar(e.target); contar(); }
+  });
+  document.body.addEventListener("htmx:afterSwap", () => { herdar(); contar(); });
+</script>
+{% endblock %}

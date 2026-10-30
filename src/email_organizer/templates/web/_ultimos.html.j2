@@ -1,0 +1,30 @@
+{% if jobs %}
+<div class="overflow-x-auto">
+<table class="min-w-full text-sm">
+  <thead class="bg-slate-50 text-xs uppercase text-slate-500">
+    <tr><th class="px-4 py-2 text-left font-medium">Job</th><th class="px-2 py-2 text-right font-medium">Lidas</th><th class="px-2 py-2 text-right font-medium">Novas</th><th class="px-2 py-2 text-right font-medium">Erros</th><th class="px-4 py-2 text-left font-medium">Estado</th></tr>
+  </thead>
+  <tbody class="divide-y divide-slate-100">
+  {% for j in jobs %}{% set r = j.rel %}{% set t = r.total if r else None %}
+    <tr class="hover:bg-slate-50">
+      <td class="px-4 py-2 font-mono text-xs text-slate-600 whitespace-nowrap">{{ j.id }}</td>
+      {% if t %}
+      <td class="px-2 py-2 text-right tabular-nums">{{ t.lidas }}</td>
+      <td class="px-2 py-2 text-right tabular-nums">{{ t.novas }}</td>
+      <td class="px-2 py-2 text-right tabular-nums {{ 'text-red-600 font-semibold' if t.erros }}">{{ t.erros }}</td>
+      <td class="px-4 py-2">
+        {% if r.cancelado %}<span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">cancelado</span>
+        {% elif t.erros or r.erros %}<span class="rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-800">com erros</span>
+        {% else %}<span class="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-800">ok</span>{% endif %}
+      </td>
+      {% else %}
+      <td colspan="4" class="px-2 py-2 text-slate-400">sem relatório (em andamento ou interrompido)</td>
+      {% endif %}
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<p class="px-5 py-4 text-sm text-slate-500">Nenhum job ainda.</p>
+{% endif %}

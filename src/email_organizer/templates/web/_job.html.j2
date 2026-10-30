@@ -1,0 +1,134 @@
+{% if aviso %}{% with texto=aviso, tipo="aviso" %}{% include "_toast.html.j2" %}{% endwith %}{% endif %}
+{% if job %}{% set r = job.rel %}
+{% set fases = [('captura', 'Captura'), ('artefatos', 'Artefatos'), ('classificacao', 'Classificação IA')] %}
+{% set atual = r.fase if r else 'captura' %}
+{% set ordem = {'captura': 0, 'artefatos': 1, 'classificacao': 2, 'fim': 3} %}
+<div {% if job.ativo %}hx-get="/jobs/{{ job.id }}/status" hx-trigger="every 2s" hx-target="#job" hx-swap="innerHTML"{% endif %} class="space-y-4">
+
+  <div class="flex items-start gap-3">
+    {% if job.ativo %}
+      <svg class="mt-0.5 animate-spin h-5 w-5 text-indigo-600 shrink-0" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>
+    {% endif %}
+    <div class="min-w-0 flex-1">
+      <p class="font-medium">
+        {% if job.ativo %}{{ 'Processando' if job.tipo == 'processar' else 'Reprocessando' }}…
+        {% else %}{{ 'Processamento' if job.tipo == 'processar' else 'Reprocessamento' }}{% endif %}
+        <span class="ml-1 font-mono text-xs font-normal text-slate-500">{{ job.id }}</span>
+      </p>
+      {% if job.ativo %}
+        <p class="text-sm text-slate-500 truncate">
+          {% if not r %}iniciando…{% elif atual == 'captura' %}lendo {{ r.atual or 'fontes' }}{% elif atual == 'artefatos' %}gerando PDFs e Markdown{% else %}classificando no Ollama{% endif %}
+          {% if duracao %} · {{ duracao }}{% endif %}
+        </p>
+      {% elif duracao %}
+        <p class="text-sm text-slate-500">duração {{ duracao }}</p>
+      {% endif %}
+    </div>
+    {% if job.ativo %}
+    <button type="button" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-red-50 hover:text-red-700 hover:border-red-200"
+            hx-post="/jobs/{{ job.id }}/cancelar" hx-target="#job" hx-disabled-elt="this">
+      <svg class="htmx-indicator animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>
+      {{ 'Cancelando…' if job.cancelar.is_set() else 'Cancelar' }}
+    </button>
+    {% endif %}
+  </div>
+
+  {# resultado final #}
+  {% if not job.ativo %}
+    {% if job.erro %}
+      <div class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"><p class="font-semibold">Job falhou</p><p class="mt-1 break-words">{{ job.erro }}</p></div>
+    {% elif r and r.cancelado %}
+      <div class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"><p class="font-semibold">Job cancelado</p><p>O que já foi capturado ficou gravado; rode de novo para continuar (incremental).</p></div>
+    {% elif r and (r.total.erros or r.erros) %}
+      <div class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"><p class="font-semibold">Concluído com erros</p><p>{{ r.erros | length }} erro(s) — veja abaixo e em <code>_jobs/{{ job.id }}/relatorio.md</code>.</p></div>
+    {% else %}
+      <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800"><p class="font-semibold">Job concluído</p><p>{% if r %}{{ r.total.novas }} nova(s), {{ r.total.duplicadas }} duplicada(s){% if r.avisos %}, {{ r.avisos | length }} aviso(s){% endif %}.{% endif %}</p></div>
+    {% endif %}
+  {% endif %}
+
+  {# etapas #}
+  {% if job.tipo == 'processar' or (r and r.fase != 'captura') %}
+  <ol class="flex items-center gap-2 text-xs">
+    {% for chave, rotulo in fases %}
+      {% set feito = ordem[atual] > loop.index0 or not job.ativo %}
+      {% set corrente = job.ativo and chave == atual %}
+      <li class="flex items-center gap-1.5 rounded-full px-2.5 py-1 {{ 'bg-indigo-600 text-white' if corrente else 'bg-emerald-100 text-emerald-800' if feito else 'bg-slate-100 text-slate-500' }}">
+        {% if feito and not corrente %}✓{% elif corrente %}<span class="h-1.5 w-1.5 rounded-full bg-white animate-pulse"></span>{% endif %}{{ rotulo }}
+      </li>
+      {% if not loop.last %}<li class="h-px flex-1 bg-slate-200"></li>{% endif %}
+    {% endfor %}
+  </ol>
+  {% endif %}
+
+  {% if r %}
+  {% set t = r.total %}
+  <div class="grid grid-cols-5 gap-2 text-center">
+    {% for rotulo, valor, cor in [('Lidas', t.lidas, 'text-slate-900'), ('Novas', t.novas, 'text-emerald-700'), ('Duplicadas', t.duplicadas, 'text-slate-600'), ('Filtradas', t.filtradas, 'text-slate-600'), ('Erros', t.erros, 'text-red-600' if t.erros else 'text-slate-400')] %}
+    <div class="rounded-lg bg-slate-50 px-1 py-2 ring-1 ring-slate-100">
+      <div class="text-lg font-semibold tabular-nums {{ cor }}">{{ valor }}</div>
+      <div class="text-[11px] uppercase tracking-wide text-slate-500">{{ rotulo }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% macro barra(rotulo, feito, total, cor) %}
+    {% set pct = (100 * feito / total) | round | int if total else 0 %}
+    <div>
+      <div class="flex justify-between text-xs text-slate-600"><span>{{ rotulo }}</span><span class="tabular-nums">{{ feito }} / {{ total }}</span></div>
+      <div class="mt-1 h-2 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full {{ cor }} transition-all duration-500" style="width: {{ pct }}%"></div></div>
+    </div>
+  {% endmacro %}
+  {% if r.artefatos_total %}{{ barra('Artefatos (PDF/Markdown)', r.artefatos_feitos, r.artefatos_total, 'bg-indigo-500') }}{% endif %}
+  {% if r.classificacao_total %}
+    {% set c = r.classificacao or {} %}
+    {{ barra('Classificação IA', (c.get('ok', 0) + c.get('pendente', 0) + c.get('erro', 0)), r.classificacao_total, 'bg-violet-500') }}
+  {% endif %}
+  {% if r.classificacao %}<p class="text-xs text-slate-600">Classificação: {% for k, v in r.classificacao.items() %}{{ k }} {{ v }}{{ ' · ' if not loop.last }}{% endfor %}</p>{% endif %}
+
+  {% if r.por_pasta %}
+  <details class="group rounded-lg ring-1 ring-slate-200" {{ 'open' if not job.ativo }}>
+    <summary class="cursor-pointer select-none px-3 py-2 text-sm font-medium text-slate-700">Por fonte / pasta ({{ r.por_pasta | length }})</summary>
+    <div class="overflow-x-auto">
+    <table class="min-w-full text-xs">
+      <thead class="bg-slate-50 text-slate-500"><tr><th class="px-3 py-1.5 text-left font-medium">Fonte / pasta</th><th class="px-2 text-right font-medium">Lidas</th><th class="px-2 text-right font-medium">Novas</th><th class="px-2 text-right font-medium">Dup.</th><th class="px-2 text-right font-medium">Filtr.</th><th class="px-3 text-right font-medium">Erros</th></tr></thead>
+      <tbody class="divide-y divide-slate-100">
+      {% for nome, c in r.por_pasta.items() %}
+        <tr><td class="px-3 py-1.5">{{ nome }}</td><td class="px-2 text-right tabular-nums">{{ c.lidas }}</td><td class="px-2 text-right tabular-nums">{{ c.novas }}</td><td class="px-2 text-right tabular-nums">{{ c.duplicadas }}</td><td class="px-2 text-right tabular-nums">{{ c.filtradas }}</td><td class="px-3 text-right tabular-nums {{ 'text-red-600 font-semibold' if c.erros }}">{{ c.erros }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </details>
+  {% endif %}
+
+  {% if not job.ativo %}
+    {% if r.erros %}
+    <details open class="rounded-lg ring-1 ring-red-200">
+      <summary class="cursor-pointer px-3 py-2 text-sm font-medium text-red-700">Erros ({{ r.erros | length }})</summary>
+      <ul class="max-h-64 overflow-auto divide-y divide-red-100 text-xs">
+        {% for e in r.erros %}<li class="px-3 py-1.5 break-words"><span class="text-slate-500">{{ e.mensagem or e.fonte or e.origem }}</span><br>{{ e.erro }}</li>{% endfor %}
+      </ul>
+    </details>
+    {% endif %}
+    {% if r.avisos %}
+    <details class="rounded-lg ring-1 ring-amber-200">
+      <summary class="cursor-pointer px-3 py-2 text-sm font-medium text-amber-700">Avisos ({{ r.avisos | length }})</summary>
+      <ul class="max-h-64 overflow-auto divide-y divide-amber-100 text-xs">
+        {% for a in r.avisos %}<li class="px-3 py-1.5 break-words"><span class="text-slate-500">{{ a.mensagem }}</span><br>{{ a.aviso }}</li>{% endfor %}
+      </ul>
+    </details>
+    {% endif %}
+    <p class="text-xs text-slate-500">relatório: <code>_jobs/{{ job.id }}/relatorio.md</code></p>
+  {% endif %}
+  {% endif %}
+</div>
+
+{# fim do job: toast + atualiza "Últimos jobs" (uma vez só) #}
+{% if final %}
+  {% if job.erro %}{% with texto="Job falhou: " ~ job.erro, tipo="erro", fixo=True %}{% include "_toast.html.j2" %}{% endwith %}
+  {% elif r and r.cancelado %}{% with texto="Job cancelado", tipo="aviso" %}{% include "_toast.html.j2" %}{% endwith %}
+  {% elif r and (r.total.erros or r.erros) %}{% with texto="Job concluído com " ~ (r.erros | length) ~ " erro(s)", tipo="erro", fixo=True %}{% include "_toast.html.j2" %}{% endwith %}
+  {% else %}{% with texto="Job concluído: " ~ (r.total.novas if r else 0) ~ " nova(s)", tipo="ok" %}{% include "_toast.html.j2" %}{% endwith %}{% endif %}
+  {% if jobs is not none %}<div id="ultimos" hx-swap-oob="innerHTML">{% include "_ultimos.html.j2" %}</div>{% endif %}
+{% endif %}
+{% endif %}

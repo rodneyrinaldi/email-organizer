@@ -1,0 +1,10 @@
+{% for m in mensagens %}
+<label class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-sm hover:bg-slate-50">
+  <span class="w-3"></span>
+  <input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-red-600" name="caminhos" value="{{ m.caminho }}" data-n="1">
+  <span class="shrink-0 font-mono text-xs text-slate-500 tabular-nums">{{ m.data or 'sem data' }}</span>
+  <span class="truncate">{{ m.assunto }}</span>
+</label>
+{% else %}
+<p class="px-2 py-1 text-xs text-slate-400">nenhuma mensagem</p>
+{% endfor %}

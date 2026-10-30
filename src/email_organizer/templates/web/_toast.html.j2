@@ -1,0 +1,2 @@
+{% set cores = {'erro': 'bg-red-600', 'aviso': 'bg-amber-500', 'ok': 'bg-emerald-600'} %}
+<div hx-swap-oob="beforeend:#toasts"><div class="toast rounded-lg px-4 py-3 text-sm text-white shadow-lg {{ cores.get(tipo, cores.aviso) }}" {% if fixo %}data-fixo="1"{% endif %}>{{ texto }}</div></div>

@@ -1,0 +1,28 @@
+{% if texto %}{% include "_toast.html.j2" %}{% endif %}
+{% set icones = {'conta': '📮', 'enviadas': '📤', 'remetente': '👤', 'destinatario': '➡️'} %}
+{% set rotulos = {'conta': 'conta', 'enviadas': 'enviadas', 'remetente': 'remetente', 'destinatario': 'destinatário'} %}
+{% macro no(n) %}
+<details class="group">
+  <summary class="flex cursor-pointer select-none items-center gap-2 rounded-md px-2 py-1 hover:bg-slate-50 list-none">
+    <span class="w-3 text-slate-400 transition-transform group-open:rotate-90">▸</span>
+    <input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-red-600" name="caminhos" value="{{ n.caminho }}" data-n="{{ n.mensagens }}">
+    <span>{{ icones[n.tipo] }}</span>
+    <span class="truncate {{ 'font-semibold' if n.tipo == 'conta' }}">{{ n.nome }}</span>
+    <span class="text-xs text-slate-400">{{ rotulos[n.tipo] }}</span>
+    <span class="ml-auto rounded-full bg-slate-100 px-2 py-0.5 text-xs tabular-nums text-slate-600">{{ n.mensagens }}</span>
+  </summary>
+  <div class="ml-5 border-l border-slate-200 pl-2">
+    {% for f in n.filhos.values() | sort(attribute='nome') %}{{ no(f) }}{% endfor %}
+    {% if n.tem_mensagens %}
+    <div hx-get="/limpeza/mensagens?caminho={{ n.caminho | urlencode }}" hx-trigger="toggle once from:closest details" hx-target="this" hx-swap="innerHTML">
+      <p class="px-2 py-1 text-xs text-slate-400">carregando mensagens…</p>
+    </div>
+    {% endif %}
+  </div>
+</details>
+{% endmacro %}
+{% if contas %}
+  {% for c in contas | sort(attribute='nome') %}{{ no(c) }}{% endfor %}
+{% else %}
+  <p class="px-2 py-4 text-sm text-slate-500">Acervo vazio.</p>
+{% endif %}

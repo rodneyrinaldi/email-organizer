@@ -1,0 +1,105 @@
+{% extends 'base.html.j2' %}
+{% from '_macros.html.j2' import spinner %}
+{% block conteudo %}
+<main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 grid gap-6 lg:grid-cols-5">
+{% if erro %}
+  <div class="lg:col-span-5 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">
+    <p class="font-medium">Não foi possível carregar a configuração</p>
+    <p class="text-sm mt-1">{{ erro }}</p>
+  </div>
+{% else %}
+  <div class="lg:col-span-3 space-y-6">
+    <section class="rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+      <div class="border-b border-slate-100 px-5 py-3">
+        <h2 class="font-semibold">Processar</h2>
+        <p class="text-sm text-slate-500">Selecione fontes e, se quiser, pastas específicas para este job.</p>
+      </div>
+      <form hx-post="/processar" hx-target="#job" hx-swap="innerHTML" hx-disabled-elt="find button[type=submit]">
+        <ul class="divide-y divide-slate-100">
+          {% for item in fontes %}{% set f = item.f %}
+          {% set cores = {'imap': 'bg-sky-100 text-sky-800', 'graph': 'bg-violet-100 text-violet-800', 'pst': 'bg-amber-100 text-amber-800'} %}
+          <li class="px-5 py-3">
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <label class="flex items-center gap-2 cursor-pointer {{ '' if f.ativo else 'text-slate-400' }}">
+                <input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" name="fontes" value="{{ f.nome }}" {{ 'checked' if f.ativo }}>
+                <span class="font-medium">{{ f.nome }}</span>
+              </label>
+              <span class="rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase {{ cores[item.tipo] }}">{{ item.tipo }}</span>
+              {% if not f.ativo %}<span class="text-xs text-slate-400">(inativa)</span>{% endif %}
+              <span class="text-sm text-slate-500 truncate">{{ f.usuario or f.caminho }}</span>
+              <span class="ml-auto flex items-center gap-3">
+                <button type="button" class="inline-flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-800"
+                        hx-get="/fontes/{{ f.nome | urlencode }}/pastas" hx-target="#pastas-{{ loop.index }}" hx-disabled-elt="this">
+                  {{ spinner("text-indigo-600") }}<span>pastas</span>
+                </button>
+                {% if item.tipo == 'graph' %}
+                <button type="button" class="inline-flex items-center gap-1.5 text-sm text-violet-600 hover:text-violet-800"
+                        hx-post="/conectar/{{ f.nome | urlencode }}" hx-target="#conectar-{{ loop.index }}" hx-disabled-elt="this">
+                  {{ spinner("text-violet-600") }}<span>conectar</span>
+                </button>
+                {% endif %}
+              </span>
+            </div>
+            <div class="mt-1 flex flex-wrap gap-1 pl-6">
+              {% for p in f.nomes_pastas() %}<span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">{{ p }}</span>
+              {% else %}<span class="text-xs text-slate-400">config: todas as pastas</span>{% endfor %}
+            </div>
+            <div id="pastas-{{ loop.index }}" class="pl-6"></div>
+            <div id="conectar-{{ loop.index }}" class="pl-6"></div>
+          </li>
+          {% endfor %}
+        </ul>
+        <div class="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-slate-100 bg-slate-50 px-5 py-3 rounded-b-xl">
+          {% for nome, rotulo, marcado in [('pdf_principal', 'PDF principal', opcoes.pdf_principal), ('markdown', 'Markdown', opcoes.markdown), ('classificacao', 'Classificação IA', ia)] %}
+          <label class="flex items-center gap-2 text-sm cursor-pointer">
+            <input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" name="{{ nome }}" value="true" {{ 'checked' if marcado }}> {{ rotulo }}
+          </label>
+          {% endfor %}
+          <button type="submit" class="ml-auto inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+            {{ spinner() }}<span>Processar</span>
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <section class="rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+      <div class="border-b border-slate-100 px-5 py-3">
+        <h2 class="font-semibold">Repositório</h2>
+        <p class="text-sm text-slate-500">Refaz etapas a partir do <code>.eml</code> salvo — a caixa postal não é acessada.</p>
+      </div>
+      <form hx-post="/reprocessar" hx-target="#job" hx-swap="innerHTML" hx-disabled-elt="find button[type=submit]"
+            class="flex flex-wrap items-center gap-x-5 gap-y-2 px-5 py-3">
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-indigo-600" name="etapas" value="artefatos" checked> artefatos</label>
+        <label class="flex items-center gap-2 text-sm"><input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-indigo-600" name="etapas" value="classificacao" checked> classificação</label>
+        <label class="flex items-center gap-2 text-sm text-slate-500"><input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-indigo-600" name="todas" value="true"> também as já ok</label>
+        <button type="submit" class="ml-auto inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-white px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50">
+          {{ spinner("text-indigo-600") }}<span>Reprocessar</span>
+        </button>
+      </form>
+      <div class="flex items-center gap-3 border-t border-slate-100 px-5 py-3">
+        <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                hx-post="/reconstruir-indice" hx-disabled-elt="this">
+          {{ spinner("text-slate-600") }}<span>Reconstruir índice</span>
+        </button>
+        <span class="text-sm text-slate-500">recria o <code>_index.json</code> varrendo o acervo</span>
+      </div>
+    </section>
+  </div>
+{% endif %}
+
+  <div class="{{ 'lg:col-span-5' if erro else 'lg:col-span-2' }} space-y-6">
+    <section class="rounded-xl bg-white shadow-sm ring-1 ring-slate-200 lg:sticky lg:top-6">
+      <div class="border-b border-slate-100 px-5 py-3"><h2 class="font-semibold">Job</h2></div>
+      <div id="job" class="p-5">
+        {% if job %}{% set final = False %}{% include "_job.html.j2" %}
+        {% else %}<p class="text-sm text-slate-500">Nenhum job em andamento.</p>{% endif %}
+      </div>
+    </section>
+
+    <section class="rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+      <div class="border-b border-slate-100 px-5 py-3"><h2 class="font-semibold">Últimos jobs</h2></div>
+      <div id="ultimos">{% include "_ultimos.html.j2" %}</div>
+    </section>
+  </div>
+</main>
+{% endblock %}

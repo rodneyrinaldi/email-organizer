@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="pt-BR" class="h-full">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block titulo %}email-organizer{% endblock %}</title>
+<script src="https://cdn.tailwindcss.com/3.4.16"></script>
+<script src="https://unpkg.com/htmx.org@2.0.4" crossorigin="anonymous"></script>
+<style>
+  .htmx-indicator { display: none; }
+  .htmx-request .htmx-indicator, .htmx-request.htmx-indicator { display: inline-block; }
+  .htmx-request .esconder-carregando { display: none; }
+  button[disabled] { opacity: .6; cursor: progress; }
+</style>
+</head>
+<body class="h-full bg-slate-100 text-slate-800 antialiased">
+<header class="bg-white border-b border-slate-200">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center gap-x-4 gap-y-1">
+    <div class="flex items-center gap-2">
+      <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-white font-bold">@</span>
+      <h1 class="text-lg font-semibold">email-organizer</h1>
+    </div>
+    <nav class="flex items-center gap-1 text-sm">
+      {% set itens = [('/', 'Processar', 'processar'), ('/limpeza', 'Limpeza', 'limpeza'), ('/lixeira', 'Lixeira', 'lixeira')] %}
+      {% for href, rotulo, chave in itens %}
+        {% if chave == 'limpeza' %}<span class="ml-2 text-xs uppercase tracking-wide text-slate-400">Rotinas</span>{% endif %}
+        <a href="{{ href }}" class="rounded-md px-3 py-1.5 {{ 'bg-indigo-50 text-indigo-700 font-medium' if pagina == chave else 'text-slate-600 hover:bg-slate-100' }}">{{ rotulo }}</a>
+      {% endfor %}
+    </nav>
+    <span class="ml-auto text-sm text-slate-500">acervo em <code class="rounded bg-slate-100 px-1.5 py-0.5 text-slate-700">{{ raiz }}</code></span>
+  </div>
+</header>
+
+{% block conteudo %}{% endblock %}
+
+
+<div id="toasts" class="fixed bottom-4 right-4 z-50 flex w-full max-w-sm flex-col gap-2 px-4 sm:px-0" aria-live="polite"></div>
+
+<script>
+  // toast por JS para falhas HTTP/rede (o servidor manda os demais via OOB)
+  function toast(texto, tipo) {
+    const cores = { erro: "bg-red-600", aviso: "bg-amber-500", ok: "bg-emerald-600" };
+    const el = document.createElement("div");
+    el.className = "toast rounded-lg px-4 py-3 text-sm text-white shadow-lg " + (cores[tipo] || cores.aviso);
+    el.textContent = texto;
+    document.getElementById("toasts").appendChild(el);
+    agendar(el);
+  }
+  function agendar(el) {
+    if (el.dataset.agendado) return;
+    el.dataset.agendado = "1";
+    el.addEventListener("click", () => el.remove());
+    setTimeout(() => el.remove(), el.dataset.fixo ? 15000 : 6000);
+  }
+  document.body.addEventListener("htmx:afterSwap", () => document.querySelectorAll("#toasts .toast").forEach(agendar));
+  document.body.addEventListener("htmx:oobAfterSwap", () => document.querySelectorAll("#toasts .toast").forEach(agendar));
+  document.body.addEventListener("htmx:responseError", (e) => {
+    let msg = "erro " + e.detail.xhr.status;
+    try { msg += ": " + (JSON.parse(e.detail.xhr.responseText).detail || ""); } catch (_) {}
+    toast(msg, "erro");
+  });
+  document.body.addEventListener("htmx:sendError", () => toast("servidor inacessível — o container está rodando?", "erro"));
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

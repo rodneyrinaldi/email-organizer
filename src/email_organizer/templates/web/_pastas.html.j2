@@ -1,0 +1,16 @@
+{% if erro %}
+<div class="mt-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+  <span class="font-medium">Falha ao listar pastas:</span> {{ erro }}
+</div>
+{% elif not pastas %}
+<p class="mt-2 text-sm text-slate-500">nenhuma pasta</p>
+{% else %}
+<div class="mt-2 rounded-md border border-slate-200 bg-slate-50 p-3">
+  <div class="grid gap-x-4 gap-y-1 sm:grid-cols-2">
+    {% for p in pastas %}
+    <label class="flex items-center gap-2 text-sm cursor-pointer truncate"><input class="h-4 w-4 rounded border-slate-300 text-indigo-600" type="checkbox" name="pastas" value="{{ fonte.nome }}{{ sep }}{{ p.nome }}" {{ 'checked' if p.marcada }}> <span class="truncate">{{ p.nome }}</span></label>
+    {% endfor %}
+  </div>
+  <p class="mt-2 text-xs text-slate-500">{{ pastas | length }} pastas · as marcadas aqui substituem as do config só neste job</p>
+</div>
+{% endif %}

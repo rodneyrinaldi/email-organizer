@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>{{ meta.assunto or "(sem assunto)" }}</title>
+<style>
+  @page { size: A4; margin: 15mm 12mm 18mm 12mm;
+          @bottom-right { content: "Página " counter(page) " de " counter(pages);
+                          font: 8pt sans-serif; color: #666; } }
+  body { font-family: "DejaVu Sans", "Liberation Sans", sans-serif; font-size: 10pt;
+         overflow-wrap: break-word; }  /* 'anywhere' trava o layout de tabelas no WeasyPrint */
+  img { max-width: 100%; height: auto; }
+  /* imagem colada (cid:): ocupa a largura útil da A4, sem passar da altura da página;
+     !important vence width/height/style do HTML original */
+  img.eo-colada { display: block; width: 100% !important; height: auto !important;
+                  max-width: 100% !important; max-height: 250mm !important;
+                  object-fit: contain; margin: 4px auto; break-inside: avoid; }
+  table { max-width: 100%; }
+  .eo-cab { border: 1px solid #999; border-collapse: collapse; width: 100%;
+            margin-bottom: 12px; font-size: 9pt; }
+  .eo-cab th { text-align: left; width: 18%; background: #eee; padding: 3px 6px;
+               vertical-align: top; border: 1px solid #ccc; }
+  .eo-cab td { padding: 3px 6px; border: 1px solid #ccc; overflow-wrap: break-word; }
+  .eo-corpo { margin: 0 0 12px 0; }
+  .eo-texto { white-space: pre-wrap; font-family: "DejaVu Sans Mono", monospace; font-size: 9pt; }
+  .eo-sec { font-size: 9pt; border-top: 1px solid #999; padding-top: 6px; margin-top: 12px; }
+  .eo-sec h2 { font-size: 10pt; margin: 0 0 4px 0; }
+  .eo-sec table { border-collapse: collapse; width: 100%; }
+  .eo-sec td, .eo-sec th { border: 1px solid #ccc; padding: 2px 4px; text-align: left; }
+  .eo-tec { font-size: 7pt; color: #666; overflow-wrap: break-word; }
+</style>
+</head>
+<body>
+{% macro pessoas(lista) %}{% for p in lista %}{% if p.nome %}{{ p.nome }} &lt;{{ p.email }}&gt;{% else %}{{ p.email }}{% endif %}{% if not loop.last %}; {% endif %}{% endfor %}{% endmacro %}
+<table class="eo-cab">
+  <tr><th>De</th><td>{{ pessoas([meta.remetente] if meta.remetente else []) }}</td></tr>
+  <tr><th>Para</th><td>{{ pessoas(meta.para) }}</td></tr>
+  {% if meta.cc %}<tr><th>Cc</th><td>{{ pessoas(meta.cc) }}</td></tr>{% endif %}
+  {% if meta.bcc %}<tr><th>Bcc</th><td>{{ pessoas(meta.bcc) }}</td></tr>{% endif %}
+  <tr><th>Data</th><td>{{ meta.data | data_br }}</td></tr>
+  <tr><th>Assunto</th><td>{{ meta.assunto or "(sem assunto)" }}</td></tr>
+  <tr><th>Message-ID</th><td>{{ meta.message_id or "(ausente)" }}</td></tr>
+</table>
+
+<div class="eo-corpo">
+{% if corpo_html is not none %}{{ corpo_html | safe }}{% else %}<div class="eo-texto">{{ corpo_texto }}</div>{% endif %}
+</div>
+
+{% if anexos %}
+<div class="eo-sec">
+  <h2>Anexos ({{ anexos | length }})</h2>
+  <table>
+    <tr><th>#</th><th>Nome</th><th>Tamanho</th><th>SHA-256</th></tr>
+    {% for a in anexos %}
+    <tr><td>{{ a.ordem }}</td><td>{{ a.nome_original }}</td>
+        <td>{{ a.tamanho }}</td><td>{{ a.sha256[:16] }}…</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
+<div class="eo-sec eo-tec">
+  id {{ meta.id }} · SHA-256 do original {{ meta.original.sha256 }} · gerado em {{ gerado_em }} · email-organizer {{ versao }}
+</div>
+</body>
+</html>
