@@ -9,9 +9,7 @@ EXEMPLO = Path(__file__).parents[1] / "config.example.json"
 def test_config_exemplo():
     c = carregar_config(EXEMPLO)
     ativas = c.fontes_ativas()
-    assert [(f.usuario, f.nomes_pastas()) for f in ativas] == [
-        ("voce@gmail.com", ["mariana"])
-    ]
+    assert [(f.usuario, f.nomes_pastas()) for f in ativas] == [("voce@gmail.com", ["mariana"])]
     assert all(not p.ativo for p in c.pst)
     assert "contato@escritorio.adv.br" in c.todas_contas_proprias()
     assert "Outros" in c.categorias

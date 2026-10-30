@@ -153,6 +153,9 @@ def test_conectar_codigo_expirado(raiz):
         def __init__(self, *_):
             pass
 
+        def verificar(self):
+            raise PermissionError("não conectada")
+
         def iniciar(self):
             return {"message": "...", "user_code": "XYZ", "expires_in": 900}
 
@@ -225,3 +228,41 @@ def test_limpeza_e_lixeira(raiz):
     r = c.post("/lixeira/esvaziar").text
     assert "2 mensagem(ns) apagada(s)" in r
     assert not (raiz / ".lixeira").exists() and not (raiz / "voce@gmail.com").exists()
+
+
+def test_conectar_detecta_token_salvo_por_outro_codigo(raiz):
+    """Autorizou um código antigo: a thread do código atual nunca termina, mas o token vale."""
+    estado = {"token": False, "iniciados": 0}
+
+    class AuthFalsa:
+        def __init__(self, *_):
+            pass
+
+        def verificar(self):
+            if not estado["token"]:
+                raise PermissionError("não conectada")
+            return "eu@hotmail.com"
+
+        def iniciar(self):
+            estado["iniciados"] += 1
+            return {"message": "...", "user_code": f"COD{estado['iniciados']}", "expires_in": 900}
+
+        def conectar(self, mostrar, fluxo):
+            threading.Event().wait(5)  # nunca autorizado
+            raise PermissionError("expired")
+
+    c = _cliente(raiz, auth=AuthFalsa)
+    assert "COD1" in c.post("/conectar/Hotmail").text
+    assert "COD1" in c.post("/conectar/Hotmail").text  # mesmo código, sem gerar outro
+    assert estado["iniciados"] == 1
+    assert "aguardando" in c.get("/conectar/Hotmail/status").text
+    assert "não conectada" in c.get("/conectar/Hotmail/verificar").text
+
+    estado["token"] = True  # token gravado por outro fluxo
+    r = c.get("/conectar/Hotmail/status").text
+    assert "conectado: eu@hotmail.com" in r and "every 3s" not in r
+    assert "conectado: eu@hotmail.com" in c.get("/conectar/Hotmail/verificar").text
+    # já conectado: conectar não gera código; reconectar (forcar) gera
+    assert "conectado: eu@hotmail.com" in c.post("/conectar/Hotmail").text
+    r = c.post("/conectar/Hotmail?forcar=true").text
+    assert "COD2" in r and "aguardando" in c.get("/conectar/Hotmail/status").text

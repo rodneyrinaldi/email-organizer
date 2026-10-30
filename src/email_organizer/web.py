@@ -57,11 +57,12 @@ class Job:
 class Conexao:
     fonte: str
     mensagem: str = ""
-    status: str = "aguardando"  # aguardando | ok | expirado | erro
+    status: str = "aguardando"  # aguardando | ok | expirado | desconectado | erro
     detalhe: str = ""
     url: str = ""
     codigo: str = ""
     expira: float = 0.0  # epoch
+    forcado: bool = False  # reconexão pedida: o token antigo não conta como "conectado"
 
     @property
     def minutos(self) -> int:
@@ -299,13 +300,29 @@ def criar_app(
 
     # --- Graph ---------------------------------------------------------------
 
-    @app.post("/conectar/{nome}", response_class=HTMLResponse)
-    def conectar(nome: str) -> HTMLResponse:
+    def fonte_graph(nome: str) -> Fonte:
         cfg = config()
         f = fonte(cfg, nome)
         if f not in cfg.graph:
             raise HTTPException(400, "só fontes Graph usam conectar")
-        c = Conexao(fonte=nome)
+        return f
+
+    def conectado(f: Fonte) -> str | None:
+        """Conta, se o token salvo vale — inclusive um salvo por outro código já autorizado."""
+        try:
+            return autenticacao(f, dir_estado(raiz)).verificar()
+        except Exception:
+            return None
+
+    @app.post("/conectar/{nome}", response_class=HTMLResponse)
+    def conectar(nome: str, forcar: bool = False) -> HTMLResponse:
+        f = fonte_graph(nome)
+        if not forcar and (conta := conectado(f)):
+            return _html("_conectar.html.j2", c=Conexao(fonte=nome, status="ok", detalhe=conta))
+        pendente = conexoes.get(nome)
+        if not forcar and pendente and pendente.status == "aguardando" and pendente.minutos > 0:
+            return _html("_conectar.html.j2", c=pendente)  # mesmo código: só um vale por vez
+        c = Conexao(fonte=nome, forcado=forcar)
         try:
             auth = autenticacao(f, dir_estado(raiz))
             fluxo = auth.iniciar()
@@ -323,6 +340,8 @@ def criar_app(
                 c.detalhe = auth.conectar(mostrar=lambda _: None, fluxo=fluxo)
                 c.status = "ok"
             except Exception as e:
+                if c.status != "aguardando":  # já resolvido pela verificação do token
+                    return
                 expirou = "70020" in str(e) or "expired" in str(e).lower()
                 c.status = "expirado" if expirou else "erro"
                 c.detalhe = str(e)
@@ -336,6 +355,23 @@ def criar_app(
         c = conexoes.get(nome)
         if c is None:
             raise HTTPException(404, "nenhuma conexão iniciada")
+        if c.status == "aguardando" and not c.forcado and (conta := conectado(fonte_graph(nome))):
+            c.status, c.detalhe = "ok", conta
+        return _html("_conectar.html.j2", c=c)
+
+    @app.get("/conectar/{nome}/verificar", response_class=HTMLResponse)
+    def conectar_verificar(nome: str) -> HTMLResponse:
+        f = fonte_graph(nome)
+        if conta := conectado(f):
+            c = conexoes.get(nome)
+            if c and c.status == "aguardando":
+                c.status, c.detalhe = "ok", conta
+            return _html("_conectar.html.j2", c=Conexao(fonte=nome, status="ok", detalhe=conta))
+        c = Conexao(
+            fonte=nome,
+            status="desconectado",
+            detalhe="conta não conectada (token ausente ou revogado)",
+        )
         return _html("_conectar.html.j2", c=c)
 
     # --- rotinas: limpeza / lixeira -----------------------------------------

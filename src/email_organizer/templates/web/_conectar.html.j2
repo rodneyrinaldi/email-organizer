@@ -1,6 +1,6 @@
-{% macro novo(rotulo) %}
+{% macro novo(rotulo, forcar=False) %}
   <button type="button" class="mt-2 inline-flex items-center gap-1.5 rounded-md bg-violet-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-700"
-          hx-post="/conectar/{{ c.fonte | urlencode }}" hx-target="closest [data-conectar]" hx-swap="outerHTML" hx-disabled-elt="this">
+          hx-post="/conectar/{{ c.fonte | urlencode }}{{ '?forcar=true' if forcar }}" hx-target="closest [data-conectar]" hx-swap="outerHTML" hx-disabled-elt="this">
     <svg class="htmx-indicator animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>{{ rotulo }}
   </button>
 {% endmacro %}
@@ -9,24 +9,35 @@
   <div class="rounded-md border border-violet-200 bg-violet-50 px-3 py-2 text-sm text-violet-900">
     <p>1. Abra <a class="font-medium underline" href="{{ c.url }}" target="_blank" rel="noopener">{{ c.url }}</a></p>
     <p class="mt-1">2. Digite o código <span class="select-all rounded bg-white px-2 py-0.5 font-mono text-base font-semibold tracking-widest ring-1 ring-violet-200">{{ c.codigo }}</span> e entre com a conta da fonte</p>
+    <p class="mt-1 text-xs text-violet-700">Já autorizou e a tela não mudou? Clique em <b>verificar</b>, ao lado de conectar.</p>
     <p class="mt-2 flex items-center gap-2 text-violet-700">
       <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>
       aguardando autorização… código expira em ~{{ c.minutos }} min
     </p>
   </div>
 {% elif c.status == 'ok' %}
-  <div class="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">conectado: {{ c.detalhe }}</div>
+  <div class="flex flex-wrap items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+    <span>✓ conectado: {{ c.detalhe }}</span>
+    <button type="button" class="ml-auto text-xs text-emerald-700 underline hover:text-emerald-900"
+            hx-post="/conectar/{{ c.fonte | urlencode }}?forcar=true" hx-target="closest [data-conectar]" hx-swap="outerHTML"
+            hx-confirm="Gerar um novo código e autorizar de novo? Só é preciso se trocar de conta ou revogar o acesso.">reconectar</button>
+  </div>
   {% with texto="conta conectada: " ~ c.detalhe, tipo="ok" %}{% include "_toast.html.j2" %}{% endwith %}
 {% elif c.status == 'expirado' %}
   <div class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
     <p class="font-medium">O código expirou (vale 15 min).</p>
     <p>Gere um novo e digite-o logo em seguida; só o código mais recente vale.</p>
-    {{ novo("gerar novo código") }}
+    {{ novo("gerar novo código", True) }}
+  </div>
+{% elif c.status == 'desconectado' %}
+  <div class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+    <p>{{ c.detalhe }}</p>
+    {{ novo("gerar código") }}
   </div>
 {% else %}
   <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
     <p class="break-words">{{ c.detalhe }}</p>
-    {{ novo("tentar de novo") }}
+    {{ novo("tentar de novo", True) }}
   </div>
 {% endif %}
 </div>

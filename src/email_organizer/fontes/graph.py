@@ -60,6 +60,12 @@ class Autenticacao:
         self._salvar()
         return r["access_token"]
 
+    def verificar(self) -> str:
+        """Conta conectada se o token em cache vale (renova sem interação); senão erro."""
+        self.token()
+        contas = self.app.get_accounts(username=self.cfg.usuario) or self.app.get_accounts()
+        return contas[0].get("username") or self.cfg.usuario
+
     def iniciar(self) -> dict:
         """Device code flow, parte 1: fluxo com `message` (URL + código) e `verification_uri`."""
         fluxo = self.app.initiate_device_flow(scopes=ESCOPOS)

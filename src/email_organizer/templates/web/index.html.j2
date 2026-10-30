@@ -37,6 +37,10 @@
                         hx-post="/conectar/{{ f.nome | urlencode }}" hx-target="#conectar-{{ loop.index }}" hx-disabled-elt="this">
                   {{ spinner("text-violet-600") }}<span>conectar</span>
                 </button>
+                <button type="button" class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800" title="confere se o token salvo ainda vale"
+                        hx-get="/conectar/{{ f.nome | urlencode }}/verificar" hx-target="#conectar-{{ loop.index }}" hx-swap="innerHTML" hx-disabled-elt="this">
+                  {{ spinner("text-slate-500") }}<span>verificar</span>
+                </button>
                 {% endif %}
               </span>
             </div>
