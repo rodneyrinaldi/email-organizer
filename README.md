@@ -119,7 +119,7 @@ As pastas do host são definidas no `.env` (modelo: [`.env.example`](.env.exampl
 
 ```ini
 OUTPUT_DIR=D:/Sincronizado/Emails       # acervo
-ESTADO_DIR=D:/.estado                   # segredos e estado incremental — FORA da nuvem
+ESTADO_DIR=D:/.email-organizer-estado                   # segredos e estado incremental — FORA da nuvem
 PST_DIR=C:/Users/voce/OneDrive/Outlook  # PSTs (somente leitura)
 ```
 

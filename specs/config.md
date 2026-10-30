@@ -2,7 +2,7 @@
 
 Local: raiz do output (`/output/config.json`). Único arquivo de configuração.
 
-Pastas do host montadas no container: `.env` (modelo `.env.example`, não versionado) — `OUTPUT_DIR` (raiz do output, hoje `D:/Sincronizado/Emails`) `PST_DIR` (PSTs, somente leitura) e `ESTADO_DIR` (hoje `D:/.estado`, montado em `/estado`, fora da pasta sincronizada). Fora do container: `--output <pasta> --estado <pasta>`.
+Pastas do host montadas no container: `.env` (modelo `.env.example`, não versionado) — `OUTPUT_DIR` (raiz do output, hoje `D:/Sincronizado/Emails`) `PST_DIR` (PSTs, somente leitura) e `ESTADO_DIR` (hoje `D:/.email-organizer-estado`, montado em `/estado`, fora da pasta sincronizada). Fora do container: `--output <pasta> --estado <pasta>`.
 
 `config.json` não tem senhas (pode ser sincronizado/backup). Pasta de estado (descartável, exceto `segredos.json`):
 - `segredos.json` — `{ "<nome da fonte IMAP>": "<senha de app>" }`; backup = gerenciador de senhas.
