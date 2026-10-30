@@ -444,6 +444,7 @@ Schema completo em [`specs/metadata.md`](specs/metadata.md).
 |---|---|---|
 | Acervo (mensagens, PDFs, `metadata.json`) | `OUTPUT_DIR` | ✅ pasta sincronizada |
 | `config.json` (sem senhas) | `OUTPUT_DIR` | ✅ vai junto |
+| `.env` (só caminhos) | raiz do projeto | 📋 cópia numa pasta de backup sincronizada (fora do git) |
 | `segredos.json` | `ESTADO_DIR` | 🔑 gerenciador de senhas |
 | `tokens/`, `imap/`, `graph/` | `ESTADO_DIR` | ♻️ recriáveis |
 
