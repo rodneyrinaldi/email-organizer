@@ -10,7 +10,7 @@
 - Falha HTTP/rede: toast de erro via JS (`htmx:responseError`/`htmx:sendError`).
 
 ## Menu
-Processar · Rotinas: **Limpeza**, **Resumo**, **Lixeira** (ver [limpeza.md](limpeza.md), [resumo.md](resumo.md)).
+Processar · **Rotinas ▾** (menu suspenso, abre no hover/foco): **Resumo em PDF**, **Limpeza**, **Lixeira** (ver [resumo.md](resumo.md), [limpeza.md](limpeza.md)). Fim de job: atalho "gerar resumo em PDF".
 
 ## Tela principal
 - Fontes: checkboxes por conta IMAP/Graph e por PST (todas do `config.json`; ativas vêm marcadas).
