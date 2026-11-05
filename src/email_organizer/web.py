@@ -5,6 +5,7 @@ Um job por vez em thread de fundo; progresso por polling HTMX. A lógica é a me
 """
 
 import os
+import tempfile
 import threading
 import time
 from collections.abc import Callable
@@ -14,10 +15,10 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import FastAPI, Form, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from jinja2 import Environment, PackageLoader
 
-from email_organizer import incremental, limpeza
+from email_organizer import incremental, limpeza, resumo
 from email_organizer.config import SEGREDOS, Config, Fonte, Pasta, carregar_config, dir_estado
 from email_organizer.fontes.graph import Autenticacao
 from email_organizer.ia import ClienteOllama
@@ -69,6 +70,28 @@ class Conexao:
         return max(0, int((self.expira - time.time()) // 60))
 
 
+@dataclass
+class TarefaResumo:
+    id: str
+    progresso: resumo.Progresso = field(default_factory=resumo.Progresso)
+    cancelar: threading.Event = field(default_factory=threading.Event)
+    inicio: float = field(default_factory=time.time)
+    fim: float | None = None
+    pdf: Path | None = None
+    erro: str | None = None
+    cancelada: bool = False
+    thread: threading.Thread | None = None
+
+    @property
+    def ativa(self) -> bool:
+        return self.thread is not None and self.thread.is_alive()
+
+    @property
+    def duracao(self) -> str:
+        s = int((self.fim or time.time()) - self.inicio)
+        return f"{s // 60} min {s % 60:02d} s" if s >= 60 else f"{s} s"
+
+
 def _html(template: str, **ctx: object) -> HTMLResponse:
     return HTMLResponse(_env.get_template(template).render(**ctx))
 
@@ -109,6 +132,8 @@ def criar_app(
     trava = threading.Lock()
     jobs: dict[str, Job] = {}
     conexoes: dict[str, Conexao] = {}
+    resumos: dict[str, TarefaResumo] = {}
+    dir_resumos = Path(tempfile.gettempdir()) / "email-organizer-resumos"
 
     def config() -> Config:
         return carregar_config(raiz / "config.json", dir_estado(raiz) / SEGREDOS)
@@ -122,11 +147,16 @@ def criar_app(
     def em_andamento() -> Job | None:
         return next((j for j in jobs.values() if j.ativo), None)
 
+    def resumo_ativo() -> TarefaResumo | None:
+        return next((t for t in resumos.values() if t.ativa), None)
+
     def iniciar(tipo: str, executar: Callable[[Job], Relatorio]) -> HTMLResponse:
         with trava:
             atual = em_andamento()
             if atual:
                 return _avisar("já existe um job em andamento; aguarde ou cancele")
+            if resumo_ativo():
+                return _avisar("há um resumo sendo gerado; aguarde ou cancele")
             job = Job(id=novo_job(), tipo=tipo)
 
             def alvo() -> None:
@@ -388,6 +418,8 @@ def criar_app(
     def ocupado() -> HTMLResponse | None:
         if em_andamento():
             return _avisar("há um job em andamento; aguarde para mexer no acervo")
+        if resumo_ativo():
+            return _avisar("há um resumo sendo gerado; aguarde para mexer no acervo")
         return None
 
     @app.get("/limpeza", response_class=HTMLResponse)
@@ -462,6 +494,101 @@ def criar_app(
         except OSError as e:
             return _avisar(f"falha ao esvaziar a lixeira: {e}", "erro")
         return _lotes(f"lixeira esvaziada: {n} mensagem(ns) apagada(s) definitivamente")
+
+    # --- rotinas: resumo -----------------------------------------------------
+
+    def tela_resumo(t: TarefaResumo, aviso: str | None = None) -> HTMLResponse:
+        return _html("_resumo_job.html.j2", tarefa=t, aviso=aviso, duracao=t.duracao)
+
+    def tarefa(id_: str) -> TarefaResumo:
+        t = resumos.get(id_)
+        if t is None:
+            raise HTTPException(404, "resumo desconhecido")
+        return t
+
+    @app.get("/resumo", response_class=HTMLResponse)
+    def resumo_() -> HTMLResponse:
+        t = resumo_ativo()
+        return _html(
+            "resumo.html.j2",
+            pagina="resumo",
+            raiz=exibir,
+            contas=limpeza.arvore(raiz),
+            modelo=config().ollama.modelo,
+            tarefa=t,
+            duracao=t.duracao if t else "",
+        )
+
+    @app.post("/resumo", response_class=HTMLResponse)
+    def resumo_gerar(
+        caminhos: Annotated[list[str], Form()] = [],  # noqa: B006
+        refazer: Annotated[bool, Form()] = False,
+    ) -> HTMLResponse:
+        if not caminhos:
+            return _avisar("nada marcado")
+        cfg = config()
+        if not cfg.ollama.habilitado:
+            return _avisar("IA desligada no config.json (ollama.habilitado)")
+        with trava:
+            if em_andamento():
+                return _avisar("há um job em andamento; aguarde")
+            if resumo_ativo():
+                return _avisar("já há um resumo sendo gerado; aguarde ou cancele")
+            try:
+                resumo.selecionar(raiz, caminhos)
+            except ValueError as e:
+                return _avisar(str(e), "erro")
+            t = TarefaResumo(id=datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+            for antigo in list(resumos.values()):  # só o último PDF fica guardado
+                if antigo.pdf:
+                    antigo.pdf.unlink(missing_ok=True)
+            resumos.clear()
+            cliente = cliente_ia or ClienteOllama.de_config(cfg)
+
+            def alvo() -> None:
+                try:
+                    t.pdf = resumo.gerar(
+                        raiz,
+                        caminhos,
+                        cliente,
+                        dir_resumos / f"resumo-{t.id}.pdf",
+                        refazer,
+                        t.progresso,
+                        t.cancelar,
+                    )
+                except resumo.Cancelado:
+                    t.erro, t.cancelada = "cancelado", True
+                except Exception as e:
+                    t.erro = str(e) or type(e).__name__
+                finally:
+                    t.fim = time.time()
+
+            t.thread = threading.Thread(target=alvo, daemon=True)
+            resumos[t.id] = t
+            t.thread.start()
+        return tela_resumo(t)
+
+    @app.get("/resumo/{id_}/status", response_class=HTMLResponse)
+    def resumo_status(id_: str) -> HTMLResponse:
+        return tela_resumo(tarefa(id_))
+
+    @app.post("/resumo/{id_}/cancelar", response_class=HTMLResponse)
+    def resumo_cancelar(id_: str) -> HTMLResponse:
+        t = tarefa(id_)
+        t.cancelar.set()
+        return tela_resumo(t, "cancelando após a mensagem atual…")
+
+    @app.get("/resumo/{id_}/pdf")
+    def resumo_pdf(id_: str, baixar: bool = False) -> FileResponse:
+        t = tarefa(id_)
+        if t.pdf is None or not t.pdf.exists():
+            raise HTTPException(404, "PDF indisponível")
+        return FileResponse(
+            t.pdf,
+            media_type="application/pdf",
+            filename=t.pdf.name,
+            content_disposition_type="attachment" if baixar else "inline",
+        )
 
     return app
 

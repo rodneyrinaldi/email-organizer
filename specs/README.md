@@ -10,6 +10,7 @@
 | [ia.md](ia.md) | Classificação e enriquecimento via Ollama |
 | [interface.md](interface.md) | UI web, jobs, relatório |
 | [limpeza.md](limpeza.md) | Rotina de limpeza e lixeira (`.lixeira/`) |
+| [resumo.md](resumo.md) | Rotina de resumo em PDF (IA) |
 | [ondas.md](ondas.md) | Roadmap e status |
 | [decisoes.md](decisoes.md) | ADRs |
 

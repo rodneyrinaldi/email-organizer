@@ -45,7 +45,7 @@ nuvem e fácil de juntar a processos, dossiês e cronologias.
 | 📄 **Artefatos prontos** | PDF da mensagem com imagens na posição, cada anexo convertido em PDF (Office, imagens, HTML, `.eml`/`.msg` aninhados), Markdown do corpo. |
 | 🧠 **IA que só enriquece** | Classificação por categoria via Ollama na sua rede, com JSON Schema. Nunca decide caminho ou exclusão. |
 | ♻️ **Incremental e deduplicado** | Baixa só o que é novo; a mesma mensagem vinda de várias fontes vira um único diretório. |
-| 🖥️ **Interface web** | Processar, acompanhar jobs em tempo real, reprocessar, conectar contas, limpeza com lixeira. |
+| 🖥️ **Interface web** | Processar, acompanhar jobs em tempo real, reprocessar, conectar contas, limpeza com lixeira, resumo em PDF. |
 | 🧱 **Simples de manter** | Sem banco, fila ou SPA. Arquivos + JSON, uma imagem Docker, pastas externas. |
 
 ## 🔄 Como funciona
@@ -346,6 +346,7 @@ O token fica em `<ESTADO_DIR>/tokens/` e se renova sozinho.
 | **reler tudo** | por fonte IMAP/Graph: esquece o que já foi lido; a próxima execução relê as pastas (dedup evita duplicatas). |
 | **Conectar** | autoriza contas Microsoft (código em destaque, tempo restante, novo código se expirar). |
 | **Rotinas → Limpeza** | árvore conta → `.enviadas`/destinatário · remetente → mensagens; marque e mova para a lixeira. Com **voltam na próxima captura** (padrão), as mensagens são recapturadas na próxima execução; desmarque para descartar de vez. |
+| **Rotinas → Resumo** | mesma árvore; marque pastas ou mensagens e gere um **PDF** com resumo por mensagem (tom, assuntos, pedidos/prazos) e **considerações** finais (situação, conteúdo, temperatura, pontos de atenção). Abre na tela; grave se quiser. Resumos ficam guardados no `metadata.json` e são reaproveitados. |
 | **Rotinas → Lixeira** | `.lixeira/` na raiz do output, um lote por exclusão; restaurar, excluir lote ou esvaziar (definitivo, com confirmação). |
 
 ### CLI
@@ -360,6 +361,7 @@ O token fica em `<ESTADO_DIR>/tokens/` e se renova sozinho.
 | `processar --fonte "<nome>"` | só a(s) fonte(s) indicada(s) (repetível; ignora `ativo`) |
 | `processar --sem-artefatos` / `--sem-classificacao` | só captura / sem IA |
 | `classificar [--todas]` | classifica pendentes (ou tudo) sem acessar a caixa |
+| `resumir <caminho>… --saida x.pdf [--refazer]` | PDF de resumo das pastas/mensagens (IA) |
 | `reconstruir-indice` | recria `_index.json` varrendo os diretórios |
 | `reler "<fonte>"` | zera o controle de já lidas de uma fonte IMAP/Graph (relê tudo na próxima execução) |
 | `reorganizar [--confirmar]` | move mensagens de layouts antigos para o atual (sem `--confirmar` só lista) |

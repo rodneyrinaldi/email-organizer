@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Resumo de mensagens</title>
+<style>
+  @page {
+    size: A4; margin: 18mm 16mm 18mm 16mm;
+    @top-right { content: "Resumo de mensagens · {{ gerado }}"; font-family: "DejaVu Sans", sans-serif; font-size: 8pt; color: #64748b; }
+    @bottom-center { content: "página " counter(page) " de " counter(pages); font-family: "DejaVu Sans", sans-serif; font-size: 8pt; color: #64748b; }
+  }
+  body { font-family: "DejaVu Sans", "Liberation Sans", sans-serif; font-size: 9.5pt; color: #1e293b; line-height: 1.45; }
+  h1 { font-size: 20pt; margin: 0 0 2mm; color: #312e81; }
+  h2 { font-size: 13pt; color: #312e81; border-bottom: 1.5pt solid #c7d2fe; padding-bottom: 1.5mm; margin: 8mm 0 4mm; }
+  h3 { font-size: 10.5pt; margin: 0; }
+  .sub { color: #64748b; margin: 0 0 5mm; }
+  table { width: 100%; border-collapse: collapse; }
+  .meta td { padding: 1.2mm 2mm; vertical-align: top; border-bottom: .5pt solid #e2e8f0; }
+  .meta td:first-child { width: 28mm; color: #64748b; }
+  .indice { font-size: 8.5pt; }
+  .indice th { text-align: left; background: #eef2ff; color: #3730a3; padding: 1.5mm; }
+  .indice td { padding: 1.2mm 1.5mm; border-bottom: .5pt solid #e2e8f0; vertical-align: top; }
+  .indice tr { page-break-inside: avoid; }
+  .n { color: #6366f1; font-weight: bold; white-space: nowrap; }
+  .aviso { background: #fffbeb; border: .5pt solid #fcd34d; border-radius: 2mm; padding: 2.5mm 3mm; font-size: 8.5pt; color: #78350f; margin: 4mm 0; }
+  .msg { border: .5pt solid #e2e8f0; border-left: 2.5pt solid #6366f1; border-radius: 1.5mm; padding: 3mm 4mm; margin: 0 0 4mm; page-break-inside: avoid; }
+  .msg.enviada { border-left-color: #0ea5e9; }
+  .cab { color: #475569; font-size: 8.5pt; margin: 1mm 0 2mm; }
+  .tag { display: inline-block; border-radius: 6pt; padding: .3mm 2mm; font-size: 7.5pt; font-weight: bold; margin-right: 1mm; }
+  .t-cordial { background: #dcfce7; color: #166534; }
+  .t-neutra { background: #f1f5f9; color: #334155; }
+  .t-tensa { background: #fef3c7; color: #92400e; }
+  .t-hostil { background: #fee2e2; color: #991b1b; }
+  .assunto { background: #eef2ff; color: #3730a3; font-weight: normal; }
+  .sit { background: #312e81; color: #fff; font-size: 9pt; padding: .8mm 3mm; }
+  .caminho { font-family: "DejaVu Sans Mono", monospace; font-size: 7pt; color: #94a3b8; margin-top: 2mm; word-break: break-all; }
+  .pedidos { margin: 1.5mm 0 0; padding-left: 5mm; }
+  .falhou { color: #b91c1c; font-style: italic; }
+  .cons { page-break-before: always; }
+  .cons h3 { color: #312e81; margin: 5mm 0 1.5mm; }
+  .cons p { margin: 0 0 2mm; text-align: justify; }
+  ul { margin: 0; padding-left: 5mm; }
+</style>
+</head>
+<body>
+
+<h1>Resumo de mensagens</h1>
+<p class="sub">{{ itens | length }} mensagem(ns){% if periodo %} · de {{ periodo[0] }} a {{ periodo[1] }}{% endif %}</p>
+
+<table class="meta">
+  <tr><td>Seleção</td><td>{% for c in caminhos %}{{ c }}{% if not loop.last %}<br>{% endif %}{% endfor %}</td></tr>
+  <tr><td>Gerado em</td><td>{{ gerado }}</td></tr>
+  <tr><td>Modelo</td><td>{{ modelo }} (Ollama local)</td></tr>
+</table>
+
+<div class="aviso">Texto gerado por IA a partir das mensagens, sem o histórico citado. Pode conter imprecisões: confira sempre no original, cujo caminho aparece em cada item.{% if falhas %} {{ falhas | length }} mensagem(ns) não puderam ser resumidas (marcadas abaixo).{% endif %}</div>
+
+<h2>Índice</h2>
+<table class="indice">
+  <tr><th>nº</th><th>Data</th><th>De</th><th>Assunto</th><th>Tom</th></tr>
+  {% for i in itens %}
+  <tr>
+    <td class="n">{{ i.n }}</td>
+    <td style="white-space: nowrap">{{ i.data | data_br }}</td>
+    <td>{{ i.de }}</td>
+    <td>{{ i.assunto }}</td>
+    <td>{% if i.resumo %}<span class="tag t-{{ i.resumo.temperatura }}">{{ i.resumo.temperatura }}</span>{% else %}—{% endif %}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h2>Resumo por mensagem</h2>
+{% for i in itens %}
+<div class="msg {{ i.direcao }}">
+  <h3><span class="n">{{ i.n }}</span> · {{ i.assunto }}</h3>
+  <div class="cab">
+    {{ i.data | data_br }} · {{ 'enviada' if i.direcao == 'enviada' else 'recebida' }}<br>
+    De: {{ i.de }}{% if i.para %}<br>Para: {{ i.para }}{% endif %}
+  </div>
+  {% if i.resumo %}
+    <div>
+      <span class="tag t-{{ i.resumo.temperatura }}">{{ i.resumo.temperatura }}</span>
+      {% for a in i.resumo.assuntos %}<span class="tag assunto">{{ a }}</span>{% endfor %}
+    </div>
+    <p style="margin: 2mm 0 0">{{ i.resumo.resumo }}</p>
+    {% if i.resumo.pedidos_prazos %}
+    <ul class="pedidos">{% for p in i.resumo.pedidos_prazos %}<li>{{ p }}</li>{% endfor %}</ul>
+    {% endif %}
+  {% else %}
+    <p class="falhou">Resumo indisponível para esta mensagem.</p>
+  {% endif %}
+  <div class="caminho">{{ i.caminho }}</div>
+</div>
+{% endfor %}
+
+<div class="cons">
+<h2>Considerações</h2>
+{% if c %}
+  <p><span class="tag sit">Situação: {{ c.situacao }}</span> <span class="tag t-{{ c.temperatura }}">tom predominante: {{ c.temperatura }}</span></p>
+  <h3>Panorama</h3>
+  <p>{{ c.panorama }}</p>
+  <h3>Conteúdo tratado</h3>
+  {% for par in c.conteudo.split('\n') if par.strip() %}<p>{{ par }}</p>{% endfor %}
+  <h3>Temperatura das mensagens</h3>
+  <p>{{ c.evolucao_tom }}</p>
+  {% if c.pontos_atencao %}<h3>Pontos de atenção</h3><ul>{% for p in c.pontos_atencao %}<li>{{ p }}</li>{% endfor %}</ul>{% endif %}
+  {% if c.proximos_passos %}<h3>Próximos passos / pendências</h3><ul>{% for p in c.proximos_passos %}<li>{{ p }}</li>{% endfor %}</ul>{% endif %}
+{% else %}
+  <p class="falhou">Não foi possível gerar as considerações.</p>
+{% endif %}
+{% if falhas %}
+  <h3>Mensagens sem resumo</h3>
+  <ul>{% for f in falhas %}<li><span class="caminho">{{ f.caminho }}</span> — {{ f.erro }}</li>{% endfor %}</ul>
+{% endif %}
+</div>
+
+</body>
+</html>

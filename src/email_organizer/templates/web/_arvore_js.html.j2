@@ -1,0 +1,29 @@
+<script>
+  const arvore = () => document.getElementById("arvore");
+  // pasta marcada cobre tudo abaixo: filhos ficam marcados e desabilitados (não são enviados)
+  function aplicar(cb) {
+    const det = cb.closest("details");
+    if (!det || cb.closest("summary") === null) return;
+    det.querySelectorAll(":scope > div input[type=checkbox]").forEach((f) => {
+      f.checked = cb.checked; f.disabled = cb.checked;
+    });
+  }
+  function herdar() {  // mensagens carregadas depois dentro de pasta já marcada
+    arvore().querySelectorAll("summary input[type=checkbox]:checked").forEach(aplicar);
+  }
+  function contar() {
+    let n = 0;
+    arvore().querySelectorAll("input[type=checkbox]:checked:not(:disabled)").forEach((c) => n += +c.dataset.n);
+    document.getElementById("marcadas").textContent = n;
+    document.getElementById("{{ botao }}").disabled = n === 0;
+  }
+  function abrirTudo(abrir) { arvore().querySelectorAll("details").forEach((d) => d.open = abrir); }
+  function desmarcarTudo() {
+    arvore().querySelectorAll("input[type=checkbox]").forEach((c) => { c.checked = false; c.disabled = false; });
+    contar();
+  }
+  document.addEventListener("change", (e) => {
+    if (e.target.matches("#arvore input[type=checkbox]")) { aplicar(e.target); contar(); }
+  });
+  document.body.addEventListener("htmx:afterSwap", () => { herdar(); contar(); });
+</script>

@@ -1,0 +1,32 @@
+{% extends 'base.html.j2' %}
+{% from '_macros.html.j2' import spinner %}
+{% block titulo %}Resumo · email-organizer{% endblock %}
+{% block conteudo %}
+<main class="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+  <section class="rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+    <div class="border-b border-slate-100 px-5 py-3">
+      <h2 class="font-semibold">Resumo</h2>
+      <p class="text-sm text-slate-500">Marque contas, pastas ou mensagens. A IA ({{ modelo }}) resume cada mensagem e fecha com considerações sobre a situação, o conteúdo e o tom. O PDF abre aqui; grave se quiser. Resumos já feitos são reaproveitados.</p>
+    </div>
+    <form id="form-resumo" hx-post="/resumo" hx-target="#resumo-job" hx-swap="innerHTML" hx-disabled-elt="find button[type=submit]">
+      <div class="flex flex-wrap items-center gap-3 border-b border-slate-100 bg-slate-50 px-5 py-2 text-sm">
+        <button type="button" class="text-slate-600 hover:text-slate-900" onclick="abrirTudo(true)">expandir</button>
+        <button type="button" class="text-slate-600 hover:text-slate-900" onclick="abrirTudo(false)">recolher</button>
+        <button type="button" class="text-slate-600 hover:text-slate-900" onclick="desmarcarTudo()">desmarcar tudo</button>
+        <label class="ml-auto flex cursor-pointer items-center gap-1.5 text-slate-600" title="ignora os resumos guardados e pede tudo de novo à IA">
+          <input type="checkbox" name="refazer" value="true" class="h-4 w-4 rounded border-slate-300 text-indigo-600"> refazer resumos
+        </label>
+        <span class="text-slate-600"><span id="marcadas" class="font-semibold tabular-nums">0</span> mensagem(ns) marcada(s)</span>
+        <button type="submit" id="btn-resumir" disabled class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-1.5 font-medium text-white shadow-sm hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed">
+          {{ spinner() }}<span>📝 Gerar resumo</span>
+        </button>
+      </div>
+      <div id="resumo-job" class="empty:hidden border-b border-slate-100 px-5 py-4">{% if tarefa %}{% include "_resumo_job.html.j2" %}{% endif %}</div>
+      <div id="arvore" class="px-3 py-3">{% include "_limpeza_arvore.html.j2" %}</div>
+    </form>
+  </section>
+</main>
+{% endblock %}
+{% block scripts %}
+{% with botao='btn-resumir' %}{% include '_arvore_js.html.j2' %}{% endwith %}
+{% endblock %}

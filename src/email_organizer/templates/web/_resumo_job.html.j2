@@ -1,0 +1,35 @@
+{% if aviso %}{% with texto=aviso, tipo="aviso" %}{% include "_toast.html.j2" %}{% endwith %}{% endif %}
+{% set p = tarefa.progresso %}
+{% set fases = {'mensagens': 'resumindo mensagens', 'consideracoes': 'redigindo considerações', 'pdf': 'montando o PDF', 'fim': 'concluído'} %}
+<div {% if tarefa.ativa %}hx-get="/resumo/{{ tarefa.id }}/status" hx-trigger="every 2s" hx-target="#resumo-job" hx-swap="innerHTML"{% endif %} class="space-y-3">
+  {% if tarefa.ativa %}
+  <div class="flex items-start gap-3">
+    <svg class="mt-0.5 animate-spin h-5 w-5 text-indigo-600 shrink-0" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>
+    <div class="min-w-0 flex-1">
+      <p class="font-medium">Gerando resumo… <span class="font-normal text-slate-500">{{ fases[p.fase] }}</span></p>
+      <p class="truncate text-sm text-slate-500">{{ p.atual }}{% if duracao %} · {{ duracao }}{% endif %}</p>
+    </div>
+    <button type="button" class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-red-50 hover:text-red-700"
+            hx-post="/resumo/{{ tarefa.id }}/cancelar" hx-target="#resumo-job" hx-swap="innerHTML" hx-disabled-elt="this">Cancelar</button>
+  </div>
+  {% set pct = (100 * p.feitos / p.total) | round | int if p.total else 0 %}
+  <div>
+    <div class="mb-1 flex justify-between text-xs text-slate-500">
+      <span>mensagens {{ p.feitos }}/{{ p.total }}{% if p.reaproveitados %} · {{ p.reaproveitados }} reaproveitada(s){% endif %}{% if p.falhas %} · <span class="text-red-600">{{ p.falhas | length }} falha(s)</span>{% endif %}</span>
+      <span>{{ pct }}%</span>
+    </div>
+    <div class="h-2 overflow-hidden rounded-full bg-slate-100"><div class="h-full bg-indigo-500 transition-all" style="width: {{ pct }}%"></div></div>
+  </div>
+  {% elif tarefa.erro %}
+  <div class="rounded-lg border px-4 py-3 text-sm {{ 'border-amber-200 bg-amber-50 text-amber-800' if tarefa.cancelada else 'border-red-200 bg-red-50 text-red-800' }}">
+    {{ 'Resumo cancelado.' if tarefa.cancelada else 'Falha ao gerar o resumo: ' ~ tarefa.erro }}
+  </div>
+  {% else %}
+  <div class="flex flex-wrap items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+    <span>✅ Resumo pronto: {{ p.total }} mensagem(ns){% if p.reaproveitados %}, {{ p.reaproveitados }} reaproveitada(s){% endif %}{% if p.falhas %}, {{ p.falhas | length }} sem resumo{% endif %}{% if duracao %} · {{ duracao }}{% endif %}.</span>
+    <a href="/resumo/{{ tarefa.id }}/pdf" target="_blank" class="ml-auto rounded-lg bg-white px-3 py-1.5 font-medium text-indigo-700 ring-1 ring-indigo-200 hover:bg-indigo-50">abrir em nova aba</a>
+    <a href="/resumo/{{ tarefa.id }}/pdf?baixar=1" class="rounded-lg bg-indigo-600 px-3 py-1.5 font-medium text-white hover:bg-indigo-700">gravar PDF</a>
+  </div>
+  <iframe src="/resumo/{{ tarefa.id }}/pdf" title="Resumo" class="h-[80vh] w-full rounded-lg ring-1 ring-slate-200"></iframe>
+  {% endif %}
+</div>

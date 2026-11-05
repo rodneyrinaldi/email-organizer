@@ -10,7 +10,7 @@
 - Falha HTTP/rede: toast de erro via JS (`htmx:responseError`/`htmx:sendError`).
 
 ## Menu
-Processar · Rotinas: **Limpeza**, **Lixeira** (ver [limpeza.md](limpeza.md)).
+Processar · Rotinas: **Limpeza**, **Resumo**, **Lixeira** (ver [limpeza.md](limpeza.md), [resumo.md](resumo.md)).
 
 ## Tela principal
 - Fontes: checkboxes por conta IMAP/Graph e por PST (todas do `config.json`; ativas vêm marcadas).

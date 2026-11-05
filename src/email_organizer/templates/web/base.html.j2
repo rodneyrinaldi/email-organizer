@@ -21,7 +21,7 @@
       <h1 class="text-lg font-semibold">email-organizer</h1>
     </div>
     <nav class="flex items-center gap-1 text-sm">
-      {% set itens = [('/', 'Processar', 'processar'), ('/limpeza', 'Limpeza', 'limpeza'), ('/lixeira', 'Lixeira', 'lixeira')] %}
+      {% set itens = [('/', 'Processar', 'processar'), ('/limpeza', 'Limpeza', 'limpeza'), ('/resumo', 'Resumo', 'resumo'), ('/lixeira', 'Lixeira', 'lixeira')] %}
       {% for href, rotulo, chave in itens %}
         {% if chave == 'limpeza' %}<span class="ml-2 text-xs uppercase tracking-wide text-slate-400">Rotinas</span>{% endif %}
         <a href="{{ href }}" class="rounded-md px-3 py-1.5 {{ 'bg-indigo-50 text-indigo-700 font-medium' if pagina == chave else 'text-slate-600 hover:bg-slate-100' }}">{{ rotulo }}</a>

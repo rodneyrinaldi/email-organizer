@@ -65,8 +65,9 @@ class ClienteOllama:
         o = config.ollama
         return cls(o.url, o.modelo, o.timeout_s)
 
-    def json(self, sistema: str, usuario: str, esquema: dict) -> str:
-        """Conteúdo cru da resposta (deve ser JSON conforme `esquema`)."""
+    def json(self, sistema: str, usuario: str, esquema: dict, contexto: int | None = None) -> str:
+        """Conteúdo cru da resposta (deve ser JSON conforme `esquema`). `contexto`: num_ctx
+        (tokens) quando o padrão do servidor não basta."""
         corpo = {
             "model": self.modelo,
             "messages": [
@@ -77,6 +78,8 @@ class ClienteOllama:
             "stream": False,
             "options": {"temperature": 0},
         }
+        if contexto:
+            corpo["options"]["num_ctx"] = contexto
         try:
             r = self.http.post(f"{self.url}/api/chat", json=corpo)
         except httpx.TransportError as e:

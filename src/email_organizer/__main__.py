@@ -5,7 +5,7 @@ import os
 import sys
 from pathlib import Path
 
-from email_organizer import incremental
+from email_organizer import incremental, resumo
 from email_organizer.captura import reorganizar
 from email_organizer.config import SEGREDOS, carregar_config, dir_estado
 from email_organizer.fontes.graph import Autenticacao
@@ -59,6 +59,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     re_.add_argument("--confirmar", action="store_true", help="sem isso, só lista o que apagaria")
 
+    rs = sub.add_parser("resumir", help="PDF com resumo por mensagem + considerações (IA)")
+    rs.add_argument("caminhos", nargs="+", help="pastas ou mensagens, relativas à raiz do output")
+    rs.add_argument("--saida", type=Path, required=True, help="arquivo PDF a gerar")
+    rs.add_argument("--refazer", action="store_true", help="ignora os resumos já guardados")
+
     ro = sub.add_parser(
         "reorganizar", help="move mensagens para o layout atual (ex.: enviadas por destinatário)"
     )
@@ -94,6 +99,21 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{de.relative_to(raiz)} → {para.relative_to(raiz)}")
         acao = "movidos" if args.confirmar else "a mover (rode com --confirmar)"
         print(f"{len(movidos)} diretórios {acao}")
+        return 0
+
+    if args.comando == "resumir":
+        if not config.ollama.habilitado:
+            print("IA desligada no config.json (ollama.habilitado)", file=sys.stderr)
+            return 1
+        cliente = ClienteOllama.de_config(config)
+        prog = resumo.Progresso()
+        try:
+            resumo.gerar(raiz, args.caminhos, cliente, args.saida, args.refazer, prog)
+        finally:
+            cliente.fechar()
+        falhas = f", {len(prog.falhas)} sem resumo" if prog.falhas else ""
+        feitas = f"{prog.total} mensagens ({prog.reaproveitados} reaproveitadas{falhas})"
+        print(f"{feitas}: {args.saida}")
         return 0
 
     if args.comando == "classificar":

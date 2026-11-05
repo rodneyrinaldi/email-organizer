@@ -93,7 +93,18 @@ Fonte de verdade. Todas as rotinas futuras trabalham sobre ele.
   "pipeline": {
     "captura":       { "status": "ok", "em": "...", "versao": "0.1.0" },
     "artefatos":     { "status": "ok", "em": "...", "versao": "0.1.0" },
-    "classificacao": { "status": "ok", "em": "...", "versao": "0.1.0" }
+    "classificacao": { "status": "ok", "em": "...", "versao": "0.1.0" },
+    "resumo":        { "status": "ok", "em": "...", "versao": "0.1.0" }
+  },
+
+  "resumo": {
+    "resumo": "Pede o contrato assinado até sexta.",
+    "temperatura": "tensa",
+    "assuntos": ["contrato"],
+    "pedidos_prazos": ["enviar contrato até sexta"],
+    "modelo": "qwen2.5:7b",
+    "versao": 1,
+    "gerado_em": "..."
   },
 
   "avisos": [
@@ -111,4 +122,5 @@ Fonte de verdade. Todas as rotinas futuras trabalham sobre ele.
 - `anexos[].status`: `convertido | original_pdf | nao_convertido | ignorado`
 - `thread.tipo`: `nova | resposta | encaminhamento`; `thread.metodo`: `cabecalho | assunto | ia` (assunto = prefixo RE:/ENC:/FW:)
 - `pipeline.*.status`: `ok | erro | pendente`
+- `resumo` (opcional, rotina Resumo): `temperatura`: `cordial | neutra | tensa | hostil`; `versao` = versão do prompt (outra versão ou modelo → refeito)
 - `imagens_remotas[].status`: `embutida | falhou`
