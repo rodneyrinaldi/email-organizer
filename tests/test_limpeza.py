@@ -24,6 +24,17 @@ def test_arvore(acervo):
     assert [m["caminho"] for m in msgs] == [recebida.relative_to(raiz).as_posix()]
 
 
+def test_arvore_pst(repo):
+    from email_organizer.modelos import Origem
+
+    pst = Origem(tipo="pst", arquivo="Arq.pst", pasta="Caixa de Entrada/Sub")
+    capturar(repo, eml("simples.eml"), pst, CONTAS)
+    (topo,) = limpeza.arvore(repo.raiz)
+    assert (topo.nome, topo.tipo) == ("Arq", "pst")
+    caixa = topo.filhos["Caixa de Entrada"]
+    assert caixa.tipo == "pasta" and caixa.filhos["Sub"].tem_mensagens
+
+
 def test_mover_restaurar_e_esvaziar(acervo):
     raiz, recebida, enviada = acervo
     rel_env = enviada.relative_to(raiz).as_posix()

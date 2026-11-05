@@ -20,6 +20,8 @@ SEM_CONTA = "_sem-conta"
 ENVIADAS = ".enviadas"  # ponto: aparece primeiro na listagem
 MAX_REMETENTE = 60
 MAX_SLUG = 40
+MAX_PASTA = 60  # cada segmento de pasta vinda do PST
+MAX_NIVEL = 30  # profundidade máxima (PST pode ter subpastas aninhadas)
 
 
 # --- arquivos -----------------------------------------------------------------
@@ -88,13 +90,26 @@ def nome_remetente(email: str | None) -> str:
     return s[:MAX_REMETENTE].rstrip(". ") or SEM_REMETENTE
 
 
+def nome_pasta(texto: str) -> str:
+    """Nome de pasta legível (mantém acentos e espaços); só tira o inválido no Windows.
+    Sem ponto/sublinhado no início: esses nomes são reservados (.enviadas, _jobs…)."""
+    s = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", texto).strip()
+    s = s.lstrip("._ ")[:MAX_PASTA].rstrip(". ")
+    return s or "_"
+
+
 def nome_conta(origem: Origem) -> str:
-    """Pasta da conta que recebeu: e-mail (IMAP/Graph) ou `pst-<arquivo>` (PST)."""
+    """Pasta da conta que recebeu: e-mail (IMAP/Graph) ou nome do arquivo PST."""
     if origem.conta:
         return nome_remetente(origem.conta)
     if origem.arquivo:
-        return f"pst-{slug(Path(origem.arquivo).stem).lower()}"
+        return nome_pasta(Path(origem.arquivo).stem)
     return SEM_CONTA
+
+
+def pastas_pst(origem: Origem) -> list[str]:
+    """Pastas do PST (`Caixa de Entrada/Clientes`) → segmentos de diretório."""
+    return [nome_pasta(p) for p in (origem.pasta or "").split("/") if p.strip()]
 
 
 def nome_diretorio(data: datetime | None, assunto: str, id_: str, tamanho_id: int = 6) -> str:
@@ -139,8 +154,8 @@ class Repositorio:
 
     def mensagens(self) -> Iterator[Path]:
         """Diretórios de mensagens (os que têm metadata.json), em qualquer nível do layout:
-        <conta>/<remetente>/<mensagem>, <conta>/.enviadas/<destinatário>/<mensagem> e layouts
-        antigos sem a pasta da conta."""
+        <conta>/<remetente>/<mensagem>, <conta>/.enviadas/<destinatário>/<mensagem>,
+        <pst>/<pastas do PST>/<mensagem> e layouts antigos sem a pasta da conta."""
 
         def andar(pasta: Path, nivel: int) -> Iterator[Path]:
             for d in sorted(pasta.iterdir()):
@@ -154,7 +169,7 @@ class Repositorio:
                     continue  # _jobs etc.
                 if (d / METADATA).exists():
                     yield d
-                elif nivel < 3:
+                elif nivel < MAX_NIVEL:
                     yield from andar(d, nivel + 1)
 
         yield from andar(self.raiz, 0)

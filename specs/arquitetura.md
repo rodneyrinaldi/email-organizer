@@ -38,7 +38,8 @@ PST e IMAP/Graph convergem no mesmo `.eml` → mesmo resultado final.
 ├── _jobs/<job-id>/{log.txt,relatorio.json,relatorio.md}
 ├── .lixeira/<lote>/{_lote.json,<caminho original>…}   # rotina de limpeza
 (estado em ESTADO_DIR, fora do output: segredos, UIDs IMAP, ids Graph, tokens)
-└── <conta>/                          # conta que recebeu: e-mail IMAP/Graph ou pst-<arquivo>
+├── <arquivo-pst>/<pastas do PST>/<mensagem>/   # PST: mesma árvore da origem
+└── <conta>/                          # conta que recebeu: e-mail IMAP/Graph
     ├── .enviadas/<destinatario-email>/   # só enviadas (remetente = conta própria)
     │   └── AAAA-MM-DD_HH-MM-SS_<assunto-slug>_<id6>/ …
     └── <remetente-email>/
@@ -55,7 +56,8 @@ PST e IMAP/Graph convergem no mesmo `.eml` → mesmo resultado final.
 ```
 
 ### Nomes
-- Conta: `origem.conta` da 1ª captura (e-mail IMAP/Graph, minúsculas); PST → `pst-<arquivo-slug>`; sem conta → `_sem-conta`. Mensagem que chega em várias contas fica **uma vez só** (dedup global), na pasta da 1ª conta que a capturou; as demais ficam em `origens_adicionais`.
+- Conta: `origem.conta` da 1ª captura (e-mail IMAP/Graph, minúsculas); PST → nome do arquivo sem `.pst` seguido das **pastas do PST** (`Advocacia/Caixa de Entrada/Clientes/<mensagem>`), sem nível de remetente/enviadas; sem conta → `_sem-conta`. Mensagem que chega em várias contas fica **uma vez só** (dedup global), na pasta da 1ª conta que a capturou; as demais ficam em `origens_adicionais`.
+- Pastas do PST e nome do arquivo: legíveis (acentos e espaços mantidos); `<>:"/\|?*` viram `_`; sem `.`, `_` ou espaço no início (nomes reservados) nem `.`/espaço no fim; máx. 60 chars por segmento.
 - Remetente: e-mail em minúsculas, sanitizado. Sem remetente → `_sem-remetente`.
 - Enviadas (`direcao: enviada`): `<conta>/.enviadas/<primeiro destinatário>/` — 1º do To, senão Cc, senão Bcc; nenhum → `_sem-destinatario`. `reorganizar [--confirmar]` move diretórios de layouts antigos.
 - Assunto slug: ASCII, sem acentos, máx. 40 chars.

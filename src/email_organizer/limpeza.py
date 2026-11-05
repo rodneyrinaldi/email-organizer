@@ -28,13 +28,15 @@ LOTE = "_lote.json"
 class No:
     nome: str
     caminho: str  # relativo à raiz, posix
-    tipo: str  # conta | enviadas | remetente | destinatario
+    tipo: str  # conta | enviadas | remetente | destinatario | pst | pasta
     mensagens: int = 0
     filhos: dict[str, "No"] = field(default_factory=dict)
     tem_mensagens: bool = False  # mensagens diretamente nesta pasta
 
 
 def _tipo(partes: tuple[str, ...]) -> str:
+    if "@" not in partes[0] and not partes[0].startswith("_"):  # PST: árvore da origem
+        return "pst" if len(partes) == 1 else "pasta"
     if len(partes) == 1:
         return "conta"
     if partes[1] == ENVIADAS:

@@ -378,7 +378,8 @@ docker compose run --rm app python -m email_organizer classificar
 ├── _index.json                              # chave de dedup → caminho (reconstruível)
 ├── _jobs/<AAAA-MM-DD_HH-MM-SS>/             # log.txt, relatorio.json, relatorio.md
 ├── .lixeira/<lote>/                         # itens movidos pela limpeza
-└── <conta>/                                 # conta que recebeu (e-mail) ou pst-<arquivo>
+├── <arquivo-pst>/<pastas do PST>/<msg>/     # PST: mesma árvore de pastas da origem
+└── <conta>/                                 # conta que recebeu (e-mail IMAP/Graph)
     ├── .enviadas/<destinatário>/<mensagem>/ # enviadas, pelo 1º destinatário
     └── <remetente>/
         └── AAAA-MM-DD_HH-MM-SS_<assunto>_<id6>/

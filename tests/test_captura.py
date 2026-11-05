@@ -57,11 +57,39 @@ def test_duplicada_outra_origem_registra(repo, origem_imap):
     assert a.diretorio.parent.parent.name == "voce@gmail.com"
 
 
-def test_pasta_da_conta_pst(repo):
-    pst = Origem(tipo="pst", arquivo="Advocacia 2019.pst", pasta="Caixa de Entrada")
+def test_pst_segue_pastas_da_origem(repo):
+    pst = Origem(tipo="pst", arquivo="Advocacia 2019.pst", pasta="Caixa de Entrada/Clientes/Ação")
     r = capturar(repo, eml("simples.eml"), pst, CONTAS)
-    assert r.diretorio.relative_to(repo.raiz).parts[:2] == ("pst-advocacia-2019", "joao@email.com")
-    assert len(list(repo.mensagens())) == 1
+    rel = r.diretorio.relative_to(repo.raiz).parts
+    assert rel[:-1] == ("Advocacia 2019", "Caixa de Entrada", "Clientes", "Ação")
+    assert list(repo.mensagens()) == [r.diretorio]
+
+
+def test_pst_pasta_raiz_e_nomes_invalidos(repo):
+    pst = Origem(tipo="pst", arquivo="arq.pst", pasta="")
+    r = capturar(repo, eml("simples.eml"), pst, CONTAS)
+    assert r.diretorio.parent == repo.raiz / "arq"
+    from email_organizer.repositorio import nome_pasta
+
+    assert nome_pasta('a\\b:c*?"') == "a_b_c___"
+    assert nome_pasta("..oculta. ") == "oculta"
+    assert nome_pasta("_jobs") == "jobs"
+
+
+def test_reorganizar_pst_antigo(repo):
+    from email_organizer.captura import reorganizar
+
+    pst = Origem(tipo="pst", arquivo="Arq.pst", pasta="Caixa de Entrada/Sub")
+    r = capturar(repo, eml("simples.eml"), pst, CONTAS)
+    antigo = repo.raiz / "pst-arq" / "joao@email.com" / r.diretorio.name
+    antigo.parent.mkdir(parents=True)
+    r.diretorio.rename(antigo)
+    (repo.raiz / "Arq" / "Caixa de Entrada" / "Sub").rmdir()
+    (repo.raiz / "Arq" / "Caixa de Entrada").rmdir()
+    (repo.raiz / "Arq").rmdir()
+    movidos = reorganizar(repo, CONTAS)
+    assert movidos == [(antigo, r.diretorio)]
+    assert not (repo.raiz / "pst-arq").exists()
 
 
 def test_dedup_sobrevive_sem_indice(repo, origem_imap):

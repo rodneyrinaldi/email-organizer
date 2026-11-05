@@ -29,6 +29,7 @@ from email_organizer.repositorio import (
     nome_conta,
     nome_diretorio,
     nome_remetente,
+    pastas_pst,
 )
 
 ORIGINAL = "original/mensagem.eml"
@@ -209,9 +210,12 @@ def criar_diretorio(
 
 
 def _pasta(raiz: Path, a: Analise, origem: Origem, contas_proprias: set[str]) -> Path:
-    """<conta>/<remetente>/ ; enviada (remetente é conta própria): <conta>/.enviadas/<primeiro
-    destinatário>/ (To, senão Cc, senão Bcc)."""
+    """PST: <pst>/<pastas do PST>/ (mesma árvore da origem).
+    IMAP/Graph: <conta>/<remetente>/ ; enviada (remetente é conta própria):
+    <conta>/.enviadas/<primeiro destinatário>/ (To, senão Cc, senão Bcc)."""
     conta = raiz / nome_conta(origem)
+    if origem.tipo == "pst":
+        return conta.joinpath(*pastas_pst(origem))
     email = a.remetente.email if a.remetente else None
     if not email or email not in contas_proprias:
         return conta / nome_remetente(email)
@@ -268,9 +272,10 @@ def reorganizar(
         alvo.parent.mkdir(parents=True, exist_ok=True)
         d.rename(alvo)
         movidos.append((d, alvo))
-        for vazia in (d.parent, d.parent.parent):  # limpa pastas que ficaram vazias
-            if vazia != repo.raiz and vazia.is_dir() and not any(vazia.iterdir()):
-                vazia.rmdir()
+        vazia = d.parent  # limpa pastas que ficaram vazias
+        while vazia != repo.raiz and vazia.is_dir() and not any(vazia.iterdir()):
+            vazia.rmdir()
+            vazia = vazia.parent
     if aplicar:
         repo.reconstruir_indice()
     return movidos

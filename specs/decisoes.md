@@ -4,7 +4,7 @@ Formato: contexto curto → decisão → consequência. Nova decisão = nova ent
 
 **ADR-001 — Arquivos + JSON, sem banco.** Uso pessoal, volume baixo. `metadata.json` por mensagem + `_index.json` reconstruível. Busca futura via rotinas.
 
-**ADR-002 — Diretório fixo por conta e remetente.** `/output/<conta>/<remetente>/<data>_<assunto>_<id6>/` (enviadas: `<conta>/.enviadas/<destinatário>/…`). Conta = quem recebeu, pois o mesmo remetente escreve para várias contas. Categoria vive só no JSON; caminho só muda via `reorganizar` (mudança de layout), nunca por IA.
+**ADR-002 — Diretório fixo por conta e remetente.** `/output/<conta>/<remetente>/<data>_<assunto>_<id6>/` (enviadas: `<conta>/.enviadas/<destinatário>/…`; PST: `<arquivo>/<pastas do PST>/…`, espelhando a origem). Conta = quem recebeu, pois o mesmo remetente escreve para várias contas. Categoria vive só no JSON; caminho só muda via `reorganizar` (mudança de layout), nunca por IA.
 
 **ADR-003 — `.eml` bruto como base.** Toda fonte converge para `.eml`; todos os artefatos derivam dele. Garante PST = IMAP = Graph no resultado e reprocessamento sem origem.
 
